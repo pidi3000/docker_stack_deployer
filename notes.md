@@ -20,10 +20,10 @@ Script that auto starts docker stack from a git repo subfolder and also updates 
     - [stack versions marked bad](#stack-versions-marked-bad)
   - [script workflow](#script-workflow)
     - [Deployment Diagram](#deployment-diagram)
-    - [Deployment method workflow](#deployment-method-workflow)
-    - [blind](#blind-1)
-    - [simple (DEFAULT)](#simple-default-1)
-    - [canary](#canary-1)
+    - [Deployment method diagram](#deployment-method-diagram)
+      - [blind](#blind-1)
+      - [simple (DEFAULT)](#simple-default-1)
+      - [canary](#canary-1)
 - [dev notes](#dev-notes)
 
 ## What it does
@@ -259,13 +259,34 @@ flowchart TD
 
 ```
 
-#### Deployment method workflow
+#### Deployment method diagram
 
-#### blind
+##### blind
 
-The script blindly runs `docker compose up -d` and will do no further checks to ensure the stack is actually working
+```mermaid
+---
+config:
+  look: classic
+  theme: dark
+---
 
-#### simple (DEFAULT)
+flowchart TD
+    A([Start deploy]) --> B[remove stack]
+
+    B --> C[copy new stack version to
+    'running_stacks' fodler]
+
+    C --> D[start new stack]
+
+    D --> END
+
+    style A fill:green,color:black,font-weight:bold
+    style END fill:green,color:black
+
+```
+
+
+##### simple (DEFAULT)
 
 
 ```mermaid
@@ -353,7 +374,7 @@ flowchart TD
 
 ```
 
-#### canary
+##### canary
 
 asd
 
