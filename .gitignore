@@ -4,6 +4,8 @@
 config.py
 git_last_commit.txt
 git_base/
+stack_running/
+stack_good/
 
 
 # Byte-compiled / optimized / DLL files
