@@ -67,7 +67,14 @@ for folder in changed_stack_folders:
     print()
     handler_c = handler_docker_class.Stack_Handler(folder)
     print()
-    handler_c.deploy_stack()
+    try:
+        handler_c.deploy_stack()
+    except Exception as e:
+        print()
+        print("-"*100)
+        print("ERROR")
+        print(e)
+        print("-"*100)
     print()
     print()
     
