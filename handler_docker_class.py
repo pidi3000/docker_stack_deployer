@@ -247,8 +247,13 @@ class Stack_Handler:
             # TODO add logging
             return
 
-        if "deploy" not in settings or settings["deploy"] is False:
+        if "deploy" not in settings:
             # TODO add logging
+            return
+        
+        if settings["deploy"] is False:
+            # ? if "deploy" is false, clean the directory
+            self.stack_files_remove_running()
             return
 
         if "methode" not in settings:
