@@ -1,6 +1,7 @@
 import config
 import handler_git
 import handler_docker
+import handler_docker_class
 import handler_compose_stack
 
 from pathlib import Path
@@ -62,7 +63,11 @@ for folder in changed_stack_folders:
     print()
     print(folder.name)
     print(folder)
-    handler_docker.deploy_stack(folder)
+    #handler_docker.deploy_stack(folder)
+    print()
+    handler_c = handler_docker_class.Stack_Handler(folder)
+    print()
+    handler_c.deploy_stack()
     print()
     print()
     
@@ -70,4 +75,4 @@ for folder in changed_stack_folders:
 
 
 # TODO then is step 4
-# TODO when performing an action on a stack, I have to cd into the stack fodler an then run a docker cmd
+# TODO when performing an action on a stack, I have to cd into the stack folder and then run a docker cmd

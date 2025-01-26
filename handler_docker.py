@@ -1,8 +1,11 @@
 
+import os
 import re
 import yaml
 import subprocess
 from pathlib import Path
+import config
+
 
 #
 # Deploy Process:
@@ -113,7 +116,18 @@ def check_stack_health(stack_folder: Path):
 ####################################################################################################
 
 
-def deploy_stack(stack_folder: Path, is_redeploy: bool = False):
+def stack_files_move(stack_folder_src: Path, stack_folder_dest: Path):
+    pass
+
+
+def stack_files_remove(stack_folder: Path):
+    pass
+
+
+####################################################################################################
+
+
+def deploy_stack(stack_folder_git: Path, is_redeploy: bool = False):
 
     # ? don't think I need to do anything here?
     # if is_redeploy:
@@ -124,7 +138,9 @@ def deploy_stack(stack_folder: Path, is_redeploy: bool = False):
     #     # copy version to running_stacks
     #     pass
 
-    settings = _load_deploy_settings(stack_folder)
+    settings = _load_deploy_settings(stack_folder_git)
+    stack_folder_base = Path(stack_folder_git.relative_to(config.FOLDER_GIT_BASE))
+    stack_folder_running = config.FOLDER_RUNNING_STACK.joinpath(stack_folder_base)
 
     print(settings)
     if settings is None:
@@ -136,15 +152,16 @@ def deploy_stack(stack_folder: Path, is_redeploy: bool = False):
         return
 
     if "methode" not in settings:
-        settings["methode"] = "simple"
+        settings["methode"] = "blind"
 
-    deploy_methode = settings["methode"] if "methode" not in settings else "simple"
+    # TODO clean this up
+    deploy_methode = settings["methode"] if "methode" not in settings else "blind"
 
     if deploy_methode == "blind":
-        _deploy_stack_blind(stack_folder)
+        _deploy_stack_blind(stack_folder_base)
 
     elif deploy_methode == "simple":
-        _deploy_stack_simple(stack_folder, is_redeploy)
+        _deploy_stack_simple(stack_folder_base, is_redeploy)
 
     elif deploy_methode == "canary":
         pass
@@ -157,9 +174,14 @@ def deploy_stack(stack_folder: Path, is_redeploy: bool = False):
 ##################################################
 
 
-def _deploy_stack_blind(stack_folder: Path):
+def _deploy_stack_blind(stack_folder_base: Path):
     # start_stack(stack_folder)
     # TODO
+
+    remove_stack(stack_folder=stack_folder_base)
+
+    stack_files_remove(stack_folder=stack_folder_base)
+    stack_files_move
 
     # clear running_stacks dir
     # copy new version from repo_stacks to running_stacks dir
@@ -176,12 +198,12 @@ def _deploy_stack_simple(stack_folder: Path, is_redeploy: bool = False):
     #        if stack is healthy
     #            create stack copy in good_stacks dir
 
-    #     remove stack
+    # remove stack
 
-    #     **************** same steps as blind deploy ****************
-    #     clear running_stacks dir
-    #     copy new version from repo_stacks to running_stacks dir
-    #     ************************************************************
+    # **************** same steps as blind deploy ****************
+    # clear running_stacks dir
+    # copy new version from repo_stacks to running_stacks dir
+    # ************************************************************
 
     # deploy new stack
 
