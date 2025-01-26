@@ -133,6 +133,8 @@ class Stack_Handler:
                   self.STACK_NAME}...")
             docker_command = f"docker compose down -v"
             self.run_command(docker_command)
+            
+            time.sleep(2)
 
         except Exception as e:
             print(f"Failed to shut down stack {
