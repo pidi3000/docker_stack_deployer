@@ -97,8 +97,9 @@ def _pull_repo(repo_dir: Path, state_file: Path):
         # Save the latest commit hash for future comparisons
 
         # TODO enable file write
-        # with state_file.open('w') as f:
-        #     f.write(latest_commit.hexsha)
+        if config.FEATURE__DEV__WRITE_COMMIT_HASH:
+            with state_file.open('w') as f:
+                f.write(latest_commit.hexsha)
 
         return f"Updated the existing repository in '{repo_dir}'", changed_files
     else:

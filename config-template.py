@@ -25,6 +25,7 @@ FOLDER_GOOD_STACK = Path(__file__).parent.joinpath("stack_good")
 ####################################################################################################
 
 FEATURE__MARK_BAD_STACK = False # ! not used yet
+FEATURE__DEV__WRITE_COMMIT_HASH = True
 
 ####################################################################################################
 # GIT
