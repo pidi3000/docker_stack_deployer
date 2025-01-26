@@ -97,14 +97,16 @@ class Stack_Handler:
         print(f"running cmd: {command}\nin folder: {stack_folder}")
         print()
         print()
-        return True
+        
+        if config.FEATURE__DEV__DRY_RUN_CMDS:
+            return True
 
         result = subprocess.run(
             command,
             shell=True,
             capture_output=True,
             text=True,
-            cwd=stack_foldert
+            cwd=stack_folder
         )
 
         if result.returncode != 0:
@@ -182,8 +184,7 @@ class Stack_Handler:
 
     def _stack_files_move(self, stack_folder_src: Path, stack_folder_dest: Path):
         print()
-        print(f"copying files \nfrom: {
-              stack_folder_src}\nto:   {stack_folder_dest}")
+        print(f"copying files \nfrom: {stack_folder_src}\nto:   {stack_folder_dest}")
 
         stack_folder_dest.mkdir(parents=True, exist_ok=True)
         shutil.copytree(stack_folder_src, stack_folder_dest,

@@ -26,6 +26,7 @@ FOLDER_GOOD_STACK = Path(__file__).parent.joinpath("stack_good")
 
 FEATURE__MARK_BAD_STACK = False # ! not used yet
 FEATURE__DEV__WRITE_COMMIT_HASH = True
+FEATURE__DEV__DRY_RUN_CMDS = True # commands are not actually runn, and only print to console
 
 ####################################################################################################
 # GIT
