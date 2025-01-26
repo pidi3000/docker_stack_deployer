@@ -183,14 +183,14 @@ user could have it setup in a way where files are created in the stack folder af
    9. the file `version.txt` is created with the conntent being the commit hash
    10. deploy stack to docker using deployment settings<br>
    when stack is not `healthy`:
-      1. stack version is marked as `bad` (see [here](#stack-versions-marked-bad))
-      2. remove stack from docker
-      3. clear stack folder in `running_stacks`
-      4. copy stack folder from `good_stacks` to `running_stacks`
-      5. redeploy good stack<br>
+       1. stack version is marked as `bad` (see [here](#stack-versions-marked-bad))
+       2. remove stack from docker
+       3. clear stack folder in `running_stacks`
+       4. copy stack folder from `good_stacks` to `running_stacks`
+       5. redeploy good stack<br>
        if stack is not `healthy`:
-         1. stop stack in docker (not remove)
-      6. log an error (maybe send notification)
+          1. stop stack in docker (not remove)
+       6. log an error (maybe send notification)
    11. run `post-deployment-script`
 
 ---
