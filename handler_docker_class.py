@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import logging
 import config
 
 
@@ -52,6 +53,9 @@ import config
 # ////////////////////////////////////////////////////////////////////////////////////////////////////
 #
 
+base_logger = logging.getLogger(
+    config.FEATURE__LOGGING__BASE_NAME).getChild("Stack_Handler")
+
 
 class Stack_Handler:
 
@@ -62,9 +66,13 @@ class Stack_Handler:
 
     STACK_NAME: str
 
+    logger: logging.Logger
+
     def __init__(self, stack_folder_base: Path):
         stack_folder_base = stack_folder_base.relative_to(
             config.FOLDER_GIT_BASE)
+
+        self.STACK_NAME = stack_folder_base.name
 
         self.STACK_FOLDER_BASE = stack_folder_base
         self.STACK_FOLDER_GIT = config.FOLDER_GIT_BASE.joinpath(
@@ -74,13 +82,14 @@ class Stack_Handler:
         self.STACK_FOLDER_GOOD = config.FOLDER_GOOD_STACK.joinpath(
             stack_folder_base)
 
-        self.STACK_NAME = stack_folder_base.name
+        self.logger = base_logger.getChild(self.STACK_NAME)
 
-        print(f"{self.STACK_FOLDER_BASE=}")
-        print(f"{self.STACK_FOLDER_GIT=}")
-        print(f"{self.STACK_FOLDER_RUNNING=}")
-        print(f"{self.STACK_FOLDER_GOOD=}")
-        print(f"{self.STACK_NAME=}")
+        self.logger.info(f"Created handler for stack: {self.STACK_NAME}")
+        # self.logger.info(f"{self.STACK_NAME=}")
+        self.logger.debug(f"{self.STACK_FOLDER_BASE=}")
+        self.logger.debug(f"{self.STACK_FOLDER_GIT=}")
+        self.logger.debug(f"{self.STACK_FOLDER_RUNNING=}")
+        self.logger.debug(f"{self.STACK_FOLDER_GOOD=}")
 
     ##################################################
 
@@ -93,11 +102,11 @@ class Stack_Handler:
         if stack_folder is None:
             stack_folder = self.STACK_FOLDER_RUNNING
 
-        print()
-        print(f"running cmd: {command}\nin folder: {stack_folder}")
-        print()
-        print()
-        
+        # self.logger.debug()
+        self.logger.debug(f"running cmd: {command}\nin folder: {stack_folder}")
+        # self.logger.debug()
+        # self.logger.debug()
+
         if config.FEATURE__DEV__DRY_RUN_CMDS:
             return True
 
@@ -119,37 +128,37 @@ class Stack_Handler:
 
     def stop_stack(self):
         try:
-            print(f"stoping down stack {self.STACK_NAME}...")
+            self.logger.info(f"stoping stack {self.STACK_NAME}...")
             docker_command = f"docker compose stop"
             self.run_command(docker_command)
 
         except Exception as e:
-            print(f"Failed to stop stack {
-                  self.STACK_NAME}: {str(e)}")
+            self.logger.exception(f"Failed to stop stack {
+                self.STACK_NAME}: {str(e)}")
 
     def remove_stack(self):
         try:
-            print(f"Shutting down stack {
-                  self.STACK_NAME}...")
+            self.logger.info(f"Shutting down stack {
+                self.STACK_NAME}...")
             docker_command = f"docker compose down -v"
             self.run_command(docker_command)
-            
+
             time.sleep(2)
 
         except Exception as e:
-            print(f"Failed to shut down stack {
+            self.logger.exception(f"Failed to shut down stack {
                 self.STACK_NAME}: {str(e)}")
 
     ##################################################
 
     def start_stack(self):
         try:
-            print(f"staring stack {self.STACK_NAME}...")
+            self.logger.info(f"staring stack {self.STACK_NAME}...")
             docker_command = f"docker compose up -d"
             self.run_command(docker_command)
 
         except Exception as e:
-            print(f"Failed to start stack {
+            self.logger.exception(f"Failed to start stack {
                 self.STACK_NAME}: {str(e)}")
 
     ##################################################
@@ -157,12 +166,12 @@ class Stack_Handler:
     def check_stack_health(self):
         services_health = []
         try:
-            print(f"checking health of stack {self.STACK_NAME}...")
+            self.logger.info(f"checking health of stack {self.STACK_NAME}...")
             docker_command = f"docker compose ps -a --format json"
             data = self.run_command(docker_command)
 
             info_jsonl = data.split("\n")
-            
+
             # ? Docker status docs
             # https://docs.docker.com/reference/cli/docker/container/ls/#status
 
@@ -173,7 +182,7 @@ class Stack_Handler:
                 service_health = service_info["Health"]
 
         except Exception as e:
-            print(f"Failed to start stack {
+            self.logger.exception(f"Failed to start stack {
                 self.STACK_NAME}: {str(e)}")
 
     def check_stack_healthy(self) -> bool:
@@ -185,8 +194,9 @@ class Stack_Handler:
     ####################################################################################################
 
     def _stack_files_move(self, stack_folder_src: Path, stack_folder_dest: Path):
-        print()
-        print(f"copying files \nfrom: {stack_folder_src}\nto:   {stack_folder_dest}")
+        # self.logger.debug()
+        self.logger.debug(f"copying files \n\tfrom: {
+                          stack_folder_src}\n\tto:   {stack_folder_dest}")
 
         stack_folder_dest.mkdir(parents=True, exist_ok=True)
         shutil.copytree(stack_folder_src, stack_folder_dest,
@@ -213,8 +223,9 @@ class Stack_Handler:
         )
 
     def stack_files_remove_running(self):
-        print()
-        print(f"removing files \nfrom: {self.STACK_FOLDER_RUNNING}")
+        # self.logger.debug()
+        self.logger.debug(f"removing files \nfrom: {
+                          self.STACK_FOLDER_RUNNING}")
         if self.STACK_FOLDER_RUNNING.exists() and self.STACK_FOLDER_RUNNING.is_dir():
             shutil.rmtree(self.STACK_FOLDER_RUNNING)
             # # Loop through all items in the folder
@@ -223,11 +234,30 @@ class Stack_Handler:
             #         item.unlink()  # Delete the file
             #     elif item.is_dir():
             #         shutil.rmtree(item)  # Delete the directory and its contents
-        print("all files removed")
+        self.logger.debug("all files removed")
 
     ####################################################################################################
 
-    def deploy_stack(self, is_redeploy: bool = False):
+    def deploy_stack(self, _is_redeploy: bool = False) -> bool:
+        """Run stack auto deploy
+
+        Parameters
+        ----------
+        _is_redeploy : bool, optional
+            used for deploy methodes providing auto re-deploy on error, by default False
+
+        Returns
+        -------
+        bool
+            Deploy success status
+
+        Raises
+        ------
+        NotImplementedError
+            _description_
+        NotImplementedError
+            _description_
+        """
 
         # ? don't think I need to do anything here?
         # * this will be handle by each deploy methode
@@ -240,24 +270,37 @@ class Stack_Handler:
         #     pass
         # ***********************************************************
 
-        settings = self._load_deploy_settings()
+        ####################################################################################################
+        # Old
+        ####################################################################################################
+        # settings = self._load_deploy_settings()
 
-        print(settings)
-        if settings is None:
-            # TODO add logging
-            return
+        # self.logger.info(settings) # TODO better log format
+        # if settings is None:
+        #     # TODO add logging
+        #     self.logger.warning("No deploy settings found")
+        #     return
 
-        if "deploy" not in settings:
-            # TODO add logging
-            return
-        
-        if settings["deploy"] is False:
-            # ? if "deploy" is false, clean the directory
-            self.stack_files_remove_running()
-            return
+        # if "deploy" not in settings:
+        #     # TODO add logging
+        #     self.logger.warning("No deploy settings found")
+        #     return
 
-        if "methode" not in settings:
-            settings["methode"] = "blind"
+        # if settings["deploy"] is False:
+        #     # ? if "deploy" is false, clean the directory
+        #     self.stack_files_remove_running()
+        #     return
+
+        # if "methode" not in settings:
+        #     settings["methode"] = "blind"
+
+        ####################################################################################################
+        # New
+        ####################################################################################################
+
+        settings = self.get_deploy_settings()
+
+        ####################################################################################################
 
         # TODO clean this up
         # deploy_methode = settings["methode"] if "methode" not in settings else "blind"
@@ -265,20 +308,23 @@ class Stack_Handler:
 
         if deploy_methode == "blind":
             self._deploy_stack_blind()
+            return True
 
         elif deploy_methode == "simple":
             raise NotImplementedError(
-                "the ´simple´ deployment methode has not been implemented yet")
+                "the `simple` deployment methode has not been implemented yet")
 
-            self._deploy_stack_simple(is_redeploy)
+            self._deploy_stack_simple(_is_redeploy)
 
         elif deploy_methode == "canary":
             raise NotImplementedError(
-                "the ´canary´ deployment methode has not been implemented yet")
+                "the `canary` deployment methode has not been implemented yet")
 
         else:
             pass
             # TODO raise error
+            
+        return False
 
     ##################################################
 
@@ -355,6 +401,35 @@ class Stack_Handler:
 
     ####################################################################################################
 
+    def get_deploy_settings(self, validate_settings: bool = True):
+        deploy_settings = self._load_deploy_settings()
+
+        if not validate_settings:
+            return deploy_settings
+
+        # ! validate deploy settings are correct
+        if deploy_settings is None:
+            # TODO add logging
+            raise TypeError(f"Could not load any deploy settings")
+
+        # Validate "deploy"
+        if "deploy" not in deploy_settings or not isinstance(deploy_settings["deploy"], bool):
+            # TODO add logging
+            raise ValueError(
+                f"parameter `deploy` is not set or not of type `bool`")
+
+        # Validate "methode"
+        if "methode" not in deploy_settings or not isinstance(deploy_settings["methode"], str):
+            # TODO add logging
+            raise ValueError(
+                f"parameter `methode` is not set or not of type `str`")
+
+        if str(deploy_settings["methode"]).lower() not in ["blind", "simple", "canary"]:
+            # TODO add logging
+            raise ValueError(f"parameter `methode` is not set")
+
+        return deploy_settings
+
     def _load_deploy_settings(self):
         setting_files = [
             self.STACK_FOLDER_GIT.joinpath("deploy.yaml"),
@@ -364,7 +439,7 @@ class Stack_Handler:
         deploy_settings = None
 
         for sf in setting_files:
-            print(f"check file {sf}")
+            self.logger.debug(f"check file {sf}")
             if sf.exists() and sf.is_file():
                 with open(sf, "r") as f:
                     deploy_settings = yaml.safe_load(f)
@@ -380,11 +455,11 @@ class Stack_Handler:
         ]
 
         for cf in compose_files:
-            print(f"check file {cf}")
+            self.logger.debug(f"check file {cf}")
             if cf.exists() and cf.is_file():
                 # try:
                 file_string = self._extract_deploy_from_compose(cf)
-                print(file_string)
+                self.logger.debug(file_string)
 
                 deploy_settings = yaml.safe_load(
                     file_string) if file_string else None
@@ -425,8 +500,8 @@ class Stack_Handler:
                 return None  # Return None if no block is found
 
         except FileNotFoundError:
-            print(f"Error: File not found at {compose_file}")
+            self.logger.exception(f"Error: File not found at {compose_file}")
             return None
         except Exception as e:
-            print(f"An error occurred: {e}")
+            self.logger.exception(f"An error occurred: {e}")
             return None

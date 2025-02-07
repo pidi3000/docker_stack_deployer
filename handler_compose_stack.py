@@ -2,6 +2,14 @@
 import config
 from pathlib import Path
 
+import logging
+
+####################################################################################################
+
+logger = logging.getLogger(config.FEATURE__LOGGING__BASE_NAME).getChild(__name__)
+
+# logger = logging.getLogger(__name__)
+
 ####################################################################################################
 
 
@@ -27,10 +35,14 @@ def get_all_stack_folders():
             if path_object.is_dir():
                 # print("Checking...", "\t", path_object)
                 try:
+                    logger.debug(
+                        f"compose yaml file found in path: {path_object}")
                     service_data = _get_service_dir(path_object)
 
                 except FileNotFoundError:
                     # print("No compose yaml file found")
+                    logger.debug(
+                        f"No compose yaml file found in path: {path_object}")
                     pass
 
             else:
@@ -105,7 +117,7 @@ def _get_service_dir(service_path: Path):
 def get_all_stack_folders_v2():
     # scans the "compose_folder" for possible compose.yaml files
 
-    print(config.COMPOSE_SUBFOLDERS)
+    # print(config.COMPOSE_SUBFOLDERS)
 
     COMPOSE_FOLDERS = [
         config.FOLDER_GIT_BASE.joinpath(sub_folder) for sub_folder in sorted(config.COMPOSE_SUBFOLDERS)
@@ -113,25 +125,28 @@ def get_all_stack_folders_v2():
 
     stack_folders: list[Path] = []
 
-    print("Stack folders found:")
+    # print("Stack folders found:")
+    logger.debug(f"Searching for stack folders in git sub-directorys {config.COMPOSE_SUBFOLDERS} :")
+    
 
     for folder in COMPOSE_FOLDERS:
-        stack_folders_temp = _find_compose_files(folder)
-        for s_folder in stack_folders_temp:
-            s_folder = s_folder.parent
+        stack_compose_files = _find_compose_files(folder)
+        for compose_file in stack_compose_files:
+            s_folder = compose_file.parent
             s_folder_rel = s_folder.relative_to(config.FOLDER_GIT_BASE)
 
             # print(str(s_folder_rel).ljust(40), "\t", len(s_folder_rel.parts), "\t", s_folder_rel.parts)
             if len(s_folder_rel.parts) >= 2:
-                print(s_folder_rel)
+                # If path is a sub-directory/not in the top level compose path
+                # eg. the path "my_compose_folder/my_app/compose.yaml" is valid
+                # but the path "my_compose_folder/compose.yaml" is not valid
+                # print(s_folder_rel)
+                logger.debug(f"{' '*4}compose sub-folder found: {s_folder_rel}")
                 stack_folders.append(s_folder)
 
     # stack_folders = sorted(stack_folders)
 
-    print()
-    print("done")
-    print()
-    print()
+    logger.debug("Finished searching")
 
     return stack_folders
 
@@ -149,7 +164,7 @@ def _find_compose_files(directory) -> list[Path]:
     directory = Path(directory)  # Ensure the input is a Path object
 
     if not directory.is_dir():
-        raise ValueError(f"The directory '{
+        raise ValueError(f"The path '{
                          directory}' is not a valid directory.")
 
     # Search for files matching the patterns
@@ -224,7 +239,7 @@ def get_updated_stack_folders_v2(update_files: list[tuple[Path, str]]) -> list[P
     """
 
     all_stack_folders = get_all_stack_folders_v2()
-    changed_stack_folders = set()
+    changed_stack_folders:set[Path] = set()
 
     # Check if each file is in one of the folders
     for change in update_files:
@@ -239,7 +254,15 @@ def get_updated_stack_folders_v2(update_files: list[tuple[Path, str]]) -> list[P
             # print(f"'{file}' is not in any of the folders.")
             pass
 
-    return sorted(changed_stack_folders)
+    changed_stack_folders = sorted(changed_stack_folders)
+
+    logger.info(f"{'No' if len(changed_stack_folders) < 1 else len(changed_stack_folders)} Stacks found with changed files:")
+    
+    if len(changed_stack_folders) > 1:
+        for changed_stack in changed_stack_folders:
+            logger.info(f"{' '*4}{changed_stack.relative_to(config.FOLDER_GIT_BASE)}")
+        
+    return changed_stack_folders
 
 
 def _get_folder_containing_file(file_path: Path, folder_list: list[Path]) -> Path | None:
@@ -264,7 +287,7 @@ def _get_folder_containing_file(file_path: Path, folder_list: list[Path]) -> Pat
 
     # Check each folder in the folder_list
     for folder in folder_list:
-        folder = Path(folder)  # Convert folder path to Path object
+        folder = Path(folder)
         if file_path.is_relative_to(folder):
             return folder
 

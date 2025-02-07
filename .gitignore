@@ -3,9 +3,12 @@
 
 config.py
 git_last_commit.txt
-git_base/
+git_base/*
 stack_running/
 stack_good/
+logs*.txt
+
+*temp*
 
 
 # Byte-compiled / optimized / DLL files

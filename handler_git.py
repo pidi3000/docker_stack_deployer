@@ -1,17 +1,26 @@
 
 import config
 
+import logging
+
 from pathlib import Path
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, ParseResult
 from git import Repo, GitCommandError, InvalidGitRepositoryError
 
 
 ####################################################################################################
 
+logger = logging.getLogger(config.FEATURE__LOGGING__BASE_NAME).getChild(__name__)
+
+# logger = logging.getLogger(__name__)
+
+####################################################################################################
+
+
 def _append_file_change(changed_files: list[Path], file_path, change_string) -> list[Path]:
     def _in_watched_folder(p: Path) -> bool:
         for sub_folder in config.COMPOSE_SUBFOLDERS:
-            # print(sub_folder, "  \t", p)
+            # logger.debug(sub_folder, "  \t", p)
             if p.is_relative_to(sub_folder):
                 return True
 
@@ -26,6 +35,18 @@ def _append_file_change(changed_files: list[Path], file_path, change_string) -> 
 
 ####################################################################################################
 
+def _load_last_commit_hash(state_file:Path):
+    if state_file.exists():
+        with state_file.open('r') as f:
+            previous_commit = f.read().strip()
+        return previous_commit
+    
+    return None
+
+def _write_last_commit_hash(state_file:Path, commit_hahs:str):
+    if config.FEATURE__DEV__WRITE_COMMIT_HASH:
+        with state_file.open('w') as f:
+            f.write(commit_hahs)
 
 def _clone_repo(repo_url, repo_dir: Path, state_file: Path):
 
@@ -36,8 +57,9 @@ def _clone_repo(repo_url, repo_dir: Path, state_file: Path):
 
     # Save the initial commit hash
     repo = Repo(repo_dir)
-    with state_file.open('w') as f:
-        f.write(repo.head.commit.hexsha)
+    _write_last_commit_hash(state_file, repo.head.commit.hexsha)
+    # with state_file.open('w') as f:
+    #     f.write(repo.head.commit.hexsha)
 
     # On the first clone, list all files as 'added'
     for file_path in repo.head.commit.tree.traverse():
@@ -55,11 +77,7 @@ def _pull_repo(repo_dir: Path, state_file: Path):
 
     repo = Repo(repo_dir)
     if not repo.bare:
-        previous_commit = None
-        # Load the last checked commit from state file
-        if state_file.exists():
-            with state_file.open('r') as f:
-                previous_commit = f.read().strip()
+        previous_commit = _load_last_commit_hash(state_file)
 
         # Pull the latest changes
         origin = repo.remotes.origin
@@ -96,10 +114,10 @@ def _pull_repo(repo_dir: Path, state_file: Path):
 
         # Save the latest commit hash for future comparisons
 
-        # TODO enable file write
-        if config.FEATURE__DEV__WRITE_COMMIT_HASH:
-            with state_file.open('w') as f:
-                f.write(latest_commit.hexsha)
+        _write_last_commit_hash(state_file, repo.head.commit.hexsha)
+        # if config.FEATURE__DEV__WRITE_COMMIT_HASH:
+        #     with state_file.open('w') as f:
+        #         f.write(latest_commit.hexsha)
 
         return f"Updated the existing repository in '{repo_dir}'", changed_files
     else:
@@ -126,8 +144,12 @@ def _clone_or_update_repo(repo_url, repo_dir, state_file="git_last_commit.txt"):
     # state_file = Path(str(repo_dir) + "-" + state_file)
     # state_file = repo_dir.joinpath(state_file)
 
-    print(state_file)
+    # logger.debug(state_file)
+    logger.debug(f"Last commit hash saved in '{state_file}': {_load_last_commit_hash(state_file)}")
 
+    
+    
+    
     message = None
     changed_files = []
 
@@ -155,10 +177,10 @@ def _clone_or_update_repo(repo_url, repo_dir, state_file="git_last_commit.txt"):
 
 def _add_credentials_to_url(url, username, password):
     # Parse the given URL into components
-    # print(url)
-    # print(username)
-    # print(password)
-    parsed_url = urlparse(url)
+    # logger.debug(url)
+    # logger.debug(username)
+    # logger.debug(password)
+    parsed_url: ParseResult = urlparse(url)
 
     # Construct netloc with username and password
     new_netloc = f"{username}:{password}@{parsed_url.netloc}"
@@ -176,30 +198,35 @@ def load_git_repo() -> list[Path, str]:
         username=config.GIT_USER,
         password=config.GIT_PASS
     )
+    
+    repo_url_censored = _add_credentials_to_url(
+        url=config.GIT_URL,
+        username=config.GIT_USER,
+        password=f"{config.GIT_PASS[:20]}{'*'*40}"
+    )
 
     # repo_dir = Path(__file__).parent.joinpath(config.GIT_BASE_FOLDER)
     repo_dir = config.FOLDER_GIT_BASE
 
-    print()
-    print()
-    print(repo_url)
-    print(repo_dir)
+    logger.debug(f"repo_url={repo_url_censored}")
+    logger.debug(f"repo_dir={str(repo_dir)}")
 
     message, changes = _clone_or_update_repo(repo_url, repo_dir)
     changes = [(config.FOLDER_GIT_BASE.joinpath(change[0]), change[1])
                for change in changes]
-    print()
-    print(message)
-    print()
-    print()
+
+    logger.debug(message)
 
     if changes:
-        print("Changed files:")
+        # logger.debug("Changed files:")
+        _change_str = "Git file changes:\n"
+
         for file, status in changes:
-            print(f"{file}: {status}")
+            _change_str = _change_str + f"{' '*4}{str(file.relative_to(config.FOLDER_GIT_BASE)):<15}: {status}\n"
+
+        logger.debug(_change_str)
+
     else:
-        print("No changes detected.")
-    print()
-    print()
+        logger.debug("No changes detected.")
 
     return changes
