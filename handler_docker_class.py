@@ -68,6 +68,8 @@ class Stack_Handler:
 
     logger: logging.Logger
 
+    _deploy_settings = None
+
     def __init__(self, stack_folder_base: Path):
         stack_folder_base = stack_folder_base.relative_to(
             config.FOLDER_GIT_BASE)
@@ -84,7 +86,7 @@ class Stack_Handler:
 
         self.logger = base_logger.getChild(self.STACK_NAME)
 
-        self.logger.info(f"Created handler for stack: {self.STACK_NAME}")
+        self.logger.debug(f"Created handler for stack: {self.STACK_NAME}")
         # self.logger.info(f"{self.STACK_NAME=}")
         self.logger.debug(f"{self.STACK_FOLDER_BASE=}")
         self.logger.debug(f"{self.STACK_FOLDER_GIT=}")
@@ -163,6 +165,7 @@ class Stack_Handler:
 
     ##################################################
 
+    # TODO
     def check_stack_health(self):
         services_health = []
         try:
@@ -298,32 +301,44 @@ class Stack_Handler:
         # New
         ####################################################################################################
 
-        settings = self.get_deploy_settings()
+        self.logger.info("Starting stack deployment...")
+
+        deploy_settings = self.get_deploy_settings()
+        self.logger.debug(f"{deploy_settings=}")
 
         ####################################################################################################
 
+        if deploy_settings is None or not deploy_settings["deploy"]:
+            self.logger.info(f"Skipping deployment for stack: {
+                             self.STACK_NAME}")
+            return True
+
+        # deploy_stack: bool = deploy_settings["deploy"]
+
         # TODO clean this up
         # deploy_methode = settings["methode"] if "methode" not in settings else "blind"
-        deploy_methode = settings["methode"]
+        deploy_methode = deploy_settings["methode"]
 
         if deploy_methode == "blind":
             self._deploy_stack_blind()
             return True
 
         elif deploy_methode == "simple":
+            # return False
             raise NotImplementedError(
                 "the `simple` deployment methode has not been implemented yet")
 
             self._deploy_stack_simple(_is_redeploy)
 
         elif deploy_methode == "canary":
+            # return False
             raise NotImplementedError(
                 "the `canary` deployment methode has not been implemented yet")
 
         else:
             pass
             # TODO raise error
-            
+
         return False
 
     ##################################################
@@ -401,34 +416,51 @@ class Stack_Handler:
 
     ####################################################################################################
 
-    def get_deploy_settings(self, validate_settings: bool = True):
+    def get_deploy_settings(self, validate_settings: bool = True, force_reload: bool = False):
+        self.logger.debug(f"{self._deploy_settings=}")
+        self.logger.debug(f"{force_reload=}")
+
+        if self._deploy_settings is not None and not force_reload:
+            return self._deploy_settings
+
         deploy_settings = self._load_deploy_settings()
+        self.logger.debug(f"{deploy_settings=}")
 
         if not validate_settings:
-            return deploy_settings
+            self._deploy_settings = deploy_settings
+            return self._deploy_settings
 
         # ! validate deploy settings are correct
         if deploy_settings is None:
             # TODO add logging
-            raise TypeError(f"Could not load any deploy settings")
+            self.logger.warning(f"Could not load any deploy settings")
+            self._deploy_settings = deploy_settings
+            return self._deploy_settings
+            # raise TypeError(f"Could not load any deploy settings")
 
         # Validate "deploy"
         if "deploy" not in deploy_settings or not isinstance(deploy_settings["deploy"], bool):
             # TODO add logging
-            raise ValueError(
+            self.logger.warning(
                 f"parameter `deploy` is not set or not of type `bool`")
+            # raise ValueError(
+            #     f"parameter `deploy` is not set or not of type `bool`")
 
         # Validate "methode"
         if "methode" not in deploy_settings or not isinstance(deploy_settings["methode"], str):
             # TODO add logging
-            raise ValueError(
+            self.logger.warning(
                 f"parameter `methode` is not set or not of type `str`")
+            # raise ValueError(
+            #     f"parameter `methode` is not set or not of type `str`")
 
         if str(deploy_settings["methode"]).lower() not in ["blind", "simple", "canary"]:
             # TODO add logging
-            raise ValueError(f"parameter `methode` is not set")
+            self.logger.warning(f"parameter `methode` is not set")
+            # raise ValueError(f"parameter `methode` is not set")
 
-        return deploy_settings
+        self._deploy_settings = deploy_settings
+        return self._deploy_settings
 
     def _load_deploy_settings(self):
         setting_files = [
@@ -441,6 +473,8 @@ class Stack_Handler:
         for sf in setting_files:
             self.logger.debug(f"check file {sf}")
             if sf.exists() and sf.is_file():
+                self.logger.debug(f"loading settings from deploy file '{sf}'")
+
                 with open(sf, "r") as f:
                     deploy_settings = yaml.safe_load(f)
                     # deploy_settings = yaml.load(sf)
@@ -449,29 +483,13 @@ class Stack_Handler:
                 # ! --------------------------------------------------
                 break
 
-        compose_files = [
-            self.STACK_FOLDER_GIT.joinpath("compose.yaml"),
-            self.STACK_FOLDER_GIT.joinpath("compose.yml")
-        ]
+            else:
+                self.logger.debug(f"deploy file '{sf}' not found")
 
-        for cf in compose_files:
-            self.logger.debug(f"check file {cf}")
-            if cf.exists() and cf.is_file():
-                # try:
-                file_string = self._extract_deploy_from_compose(cf)
-                self.logger.debug(file_string)
+        # self.logger.debug(f"{deploy_settings=}")
+        return self._extract_deploy_from_compose()
 
-                deploy_settings = yaml.safe_load(
-                    file_string) if file_string else None
-                # deploy_settings = yaml.load(sf)
-
-                return deploy_settings
-                # except Exception as identifier:
-                #     pass
-
-        return None
-
-    def _extract_deploy_from_compose(self, compose_file: Path):
+    def _extract_deploy_from_compose(self):
         """
         Extracts and returns the text within the block marked by 
         '# Deploy Start #' and '# Deploy End #' using regex.
@@ -480,28 +498,52 @@ class Stack_Handler:
         :return: String containing the text within the deploy block, 
                 or None if the block is not found.
         """
-        try:
-            with open(compose_file, 'r') as file:
-                file_content = file.read()
 
-            # Regex to match the block between the markers
-            match = re.search(
-                r"# Deploy Start #\n(.*?)\n# Deploy End #", file_content, re.DOTALL)
+        def _extract_settings_from_file(compose_file: Path):
+            try:
+                with open(compose_file, 'r') as file:
+                    file_content = file.read()
 
-            if match:
-                data = match.group(1)
+                # Regex to match the block between the markers
+                match = re.search(
+                    r"# Deploy Start #\n(.*?)\n# Deploy End #", file_content, re.DOTALL)
 
-                data = "\n".join(
-                    line.removeprefix("#").strip() for line in data.split("\n")
-                )
+                if match:
+                    data = match.group(1)
 
-                return data
+                    data = "\n".join(
+                        line.removeprefix("#").strip() for line in data.split("\n")
+                    )
+
+                    return data
+                else:
+                    return None  # Return None if no block is found
+
+            except FileNotFoundError:
+                self.logger.exception(
+                    f"Error: File not found at {compose_file}")
+                return None
+            except Exception as e:
+                self.logger.exception(f"An error occurred: {e}")
+                return None
+
+        for cf in [
+            self.STACK_FOLDER_GIT.joinpath("compose.yaml"),
+            self.STACK_FOLDER_GIT.joinpath("compose.yml")
+        ]:
+            if cf.exists() and cf.is_file():
+                self.logger.debug(f"loading settings from compose file '{cf}'")
+
+                file_string = _extract_settings_from_file(cf)
+
+                deploy_settings = yaml.safe_load(
+                    file_string) if file_string else None
+
+                # self.logger.debug(f"{deploy_settings=}")
+
+                # deploy_settings = yaml.load(sf)
+
+                return deploy_settings
+
             else:
-                return None  # Return None if no block is found
-
-        except FileNotFoundError:
-            self.logger.exception(f"Error: File not found at {compose_file}")
-            return None
-        except Exception as e:
-            self.logger.exception(f"An error occurred: {e}")
-            return None
+                self.logger.debug(f"compose file '{cf}' not found")

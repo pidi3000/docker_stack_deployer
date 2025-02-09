@@ -14,6 +14,7 @@ logger = logging.getLogger(config.FEATURE__LOGGING__BASE_NAME).getChild(__name__
 
 
 def get_all_stack_folders():
+    # TODO keep doing what ever I was doin
     # scans the "compose_folder" for possible compose.yaml files
 
     print(config.COMPOSE_SUBFOLDERS)
