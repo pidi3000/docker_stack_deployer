@@ -45,13 +45,14 @@ def setup_logger():
             formatter = logging.Formatter(log_fmt)
             return formatter.format(record)
 
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)  # ! DO NOT CHANGE LEVEL HERE
+    # ? change level on the appropriate handler (Console or file)
 
     ##################################################
     # ? console log output
     ##################################################
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.DEBUG)  # ! <-- change here
     ch.setFormatter(ColoredFormatter())
 
     logger.addHandler(ch)
@@ -240,7 +241,6 @@ def main():
     for handler_c in stack_handlers:
         logger.info(f"{' '*4} {handler_c.STACK_FOLDER_BASE}")
         # logger.info(f"{' '*4} {handler_c.STACK_NAME}")
-
 
     ##################################################
     # Deploy queued stacks
