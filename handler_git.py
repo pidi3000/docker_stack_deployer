@@ -163,7 +163,7 @@ def _clone_or_update_repo(repo_url, repo_dir, state_file="git_last_commit.txt"):
 
         else:
             message, changed_files = _clone_repo(
-                config.GIT_URL, repo_dir, state_file)
+                repo_url, repo_dir, state_file)
 
     except (GitCommandError, InvalidGitRepositoryError) as e:
         raise
