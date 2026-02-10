@@ -9,6 +9,7 @@ stack_good/
 logs*.txt
 logs*.txt.*
 
+temp.py
 
 
 # Byte-compiled / optimized / DLL files
