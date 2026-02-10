@@ -72,7 +72,7 @@ def setup_logger():
     # ? rotating log file
     ##################################################
     _create_log_file_handler(
-        filename="logs.txt",
+        filename=config.LOGGING_FILE_PATH,
         log_level=logging_level,  # same level as console output
         backupCount=2,
         # format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
@@ -142,7 +142,7 @@ def _create_log_file_handler(filename: str,
 def validate_config():
     BASE_PATH = Path(__file__).parent.absolute()
 
-    def _validate_path(varname):
+    def _validate_path(varname, enforce_in_base_path=True):
         path = getattr(config, varname)
         # print(path)
         try:
@@ -151,7 +151,7 @@ def validate_config():
             raise TypeError(
                 f"'config.{varname}' must be convertable to a `pathlib.Path` object")
 
-        if not path.is_relative_to(BASE_PATH):
+        if enforce_in_base_path and not path.is_relative_to(BASE_PATH):
             raise ValueError(f"the path 'config.{
                              varname}' must inside script base path ('{BASE_PATH}')")
 
@@ -168,6 +168,7 @@ def validate_config():
     # if not isinstance(config.COMPOSE_SUBFOLDERS, list):
     #     raise TypeError("config.COMPOSE_SUBFOLDERS must be of type list")
 
+    _validate_path("LOGGING_FILE_PATH", enforce_in_base_path=False)
     _validate_path("FOLDER_GIT_BASE")
     _validate_path("FOLDER_RUNNING_STACK")
     _validate_path("FOLDER_GOOD_STACK")

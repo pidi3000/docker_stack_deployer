@@ -8,6 +8,7 @@ from pathlib import Path
 # LOGGING
 ####################################################################################################
 LOGGING_LEVEL = "{{ script_config_vars.LOG_LEVEL | default('info') }}"
+LOGGING_FILE_PATH = "{{ script_config_vars.LOG_FILE_PATH | default('logs.txt') }}"
 
 
 ####################################################################################################
