@@ -13,7 +13,7 @@ LOGGING_LEVEL = "{{ script_config_vars.LOG_LEVEL | default('info') }}"
 ####################################################################################################
 # Fodlers
 ####################################################################################################
-COMPOSE_SUBFOLDERS = {{ script_config_vars.COMPOSE_SUBFOLDERS}}
+COMPOSE_SUBFOLDERS = {{ script_config_vars.COMPOSE_SUBFOLDERS }}
 """ Folder to search for docker compose stacks"""
 
 FOLDER_GIT_BASE = Path(__file__).parent.joinpath("{{ script_config_vars.FOLDER_GIT_BASE | default('git_base') }}")
@@ -50,4 +50,5 @@ STACK_HEALTHCHECK_TIMEOUT = {{ script_config_vars.STACK_HEALTHCHECK_TIMEOUT | de
 
 GIT_URL = "{{ script_config_vars.GIT_URL}}"
 GIT_USER = "{{ script_config_vars.GIT_USER}}"
+# TODO load this from a file
 GIT_PASS = "{{ script_config_vars.GIT_PASS}}"

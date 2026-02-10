@@ -62,7 +62,7 @@ def setup_logger():
     # ? console log output
     ##################################################
     ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)  # ! <-- change here
+    ch.setLevel(logging.DEBUG)  # ! <-- change here
     ch.setFormatter(ColoredFormatter())
 
     logger.addHandler(ch)
@@ -220,8 +220,8 @@ def validate_config():
 
 
 def main():
-    setup_logger()
     validate_config()
+    setup_logger()
 
     changed_files = handler_git.load_git_repo()
     changed_stack_folders = handler_compose_stack.get_updated_stack_folders_v2(

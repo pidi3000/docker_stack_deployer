@@ -50,4 +50,5 @@ STACK_HEALTHCHECK_TIMEOUT = 90  # TODO make this available in deploy settings fi
 
 GIT_URL = ""
 GIT_USER = ""
+# TODO load this from a file
 GIT_PASS = ""
