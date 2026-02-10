@@ -61,55 +61,25 @@ def setup_logger():
     ##################################################
     # ? console log output
     ##################################################
+    logging_level = logging.getLevelNamesMapping().get(config.LOGGING_LEVEL.upper())
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)  # ! <-- change here
+    ch.setLevel(logging_level)  # ! <-- change here
     ch.setFormatter(ColoredFormatter())
 
     logger.addHandler(ch)
 
     ##################################################
-    # ? rotating log file DEBUG
+    # ? rotating log file
     ##################################################
     _create_log_file_handler(
         filename="logs.txt",
-        log_level=logging.DEBUG,
-        backupCount=2,
-        # format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
-        formatter=MyBaseFormatter()
-    )
-
-    # fh.setFormatter(CustomFormatter())
-
-    ##################################################
-    # ? log file INFO
-    ##################################################
-    _create_log_file_handler(
-        filename="logs-info.txt",
-        log_level=logging.INFO,
-        backupCount=1,
-        # format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
-        formatter=MyBaseFormatter()
-    )
-
-    ##################################################
-    # ? log file CRITICAL
-    ##################################################
-    _create_log_file_handler(
-        filename="logs-critical.txt",
-        log_level=logging.CRITICAL,
-        # log_level=logging.ERROR,
+        log_level=logging_level,  # same level as console output
         backupCount=2,
         # format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
         formatter=MyBaseFormatter()
     )
 
     ##################################################
-
-    # logging.basicConfig(filename="logs.txt",
-    #                     filemode='a',
-    #                     format='%(asctime)s,%(msecs)03d %(name)s %(levelname)-10s %(message)s',
-    #                     datefmt='%Y-%m-%d %H:%M:%S',
-    #                     level=logging.DEBUG)
 
     logger.info("-"*200)
     logger.info("Starting app")
@@ -126,7 +96,7 @@ def _create_log_file_handler(filename: str,
                              log_level=logging.DEBUG,
                              format_string: str = '%(asctime)s - %(levelname)-10s - %(name)s - {%(filename)s:%(lineno)d} - %(message)s',
                              formatter: logging.Formatter = None,
-                             maxBytes: int = 10_000_000, # 10MB
+                             maxBytes: int = 10_000_000,  # 10MB
                              backupCount: int = 2
                              ):
     """create and attach a file Handler to the main logger
@@ -213,6 +183,12 @@ def validate_config():
     _validate_value_set("FEATURE__MARK_BAD_STACK", bool)
     _validate_value_set("FEATURE__DEV__WRITE_COMMIT_HASH", bool)
     _validate_value_set("FEATURE__DEV__DRY_RUN_CMDS", bool)
+
+    # Validate logging level config
+    config.LOGGING_LEVEL = config.LOGGING_LEVEL.upper()
+    if config.LOGGING_LEVEL not in logging.getLevelNamesMapping():
+        raise ValueError(
+            f"config.LOGGING_LEVEL must be one of {list(logging.getLevelNamesMapping().keys())}")
 
 ####################################################################################################
 # run
