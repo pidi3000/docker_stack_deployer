@@ -5,6 +5,12 @@ from pathlib import Path
 
 
 ####################################################################################################
+# LOGGING
+####################################################################################################
+LOGGING_LEVEL = "info"
+
+
+####################################################################################################
 # Fodlers
 ####################################################################################################
 COMPOSE_SUBFOLDERS = ["git_subfolder"]
@@ -24,16 +30,19 @@ FOLDER_GOOD_STACK = Path(__file__).parent.joinpath("stack_good")
 # Feature flags
 ####################################################################################################
 
-FEATURE__MARK_BAD_STACK = False # ! not used yet
+FEATURE__LOGGING__BASE_NAME = "app"
+
+FEATURE__MARK_BAD_STACK = False  # ! not used yet
 FEATURE__DEV__WRITE_COMMIT_HASH = True
-FEATURE__DEV__DRY_RUN_CMDS = True # commands are not actually runn, and only print to console
+# commands are not actually run, and only print to console
+FEATURE__DEV__DRY_RUN_CMDS = True
 
 
 ##################################################
 # Helth check
 ##################################################
 
-STACK_HEALTHCHECK_TIMEOUT = 90
+STACK_HEALTHCHECK_TIMEOUT = 90  # TODO make this available in deploy settings file
 
 ####################################################################################################
 # GIT
