@@ -151,9 +151,8 @@ def _create_log_file_handler(filename: str, log_level=logging.DEBUG,
     logger.addHandler(rfh)
 
 ####################################################################################################
-#
-####################################################################################################
 # check config is valid
+####################################################################################################
 
 
 def validate_config():
@@ -201,6 +200,9 @@ def validate_config():
     _validate_value_set("FEATURE__DEV__WRITE_COMMIT_HASH", bool)
     _validate_value_set("FEATURE__DEV__DRY_RUN_CMDS", bool)
 
+####################################################################################################
+# run
+####################################################################################################
 
 def main():
     setup_logger()
@@ -209,6 +211,7 @@ def main():
     changed_files = handler_git.load_git_repo()
     changed_stack_folders = handler_compose_stack.get_updated_stack_folders_v2(
         changed_files)
+    # ? list of paths of all compose stacks that have had files changed in the git repo since last check
 
 
 # print()
@@ -272,5 +275,3 @@ def main():
 
 
 main()
-
-# TODO then is step 4

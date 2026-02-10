@@ -336,10 +336,8 @@ class Stack_Handler:
                 "the `canary` deployment methode has not been implemented yet")
 
         else:
-            pass
             # TODO raise error
-
-        return False
+            raise ValueError(f"Invalid deployment methode: {deploy_methode}")
 
     ##################################################
 
@@ -360,7 +358,7 @@ class Stack_Handler:
                     #            create stack copy in good_stacks dir
                     self.stack_files_save_to_good()
 
-        # **************** same steps as blind deploy ****************
+        # **************** similar steps as blind deploy ****************
         # remove stack
         # clear running_stacks dir
         # copy new version from repo_stacks to running_stacks dir
@@ -369,7 +367,10 @@ class Stack_Handler:
 
         self.remove_stack()
         self.stack_files_remove_running()
-        self.stack_files_load_from_git()
+        if is_redeploy:
+            self.stack_files_load_from_good()
+        else:
+            self.stack_files_load_from_git()
         self.start_stack()
 
         time_start = time.time()
@@ -381,37 +382,34 @@ class Stack_Handler:
                 break
 
             else:
-                time.sleep
+                time.sleep(1)
 
         # if deploy is NOT good
         if not deploy_good:
             #     if is_redeploy
             if is_redeploy:
                 self.stop_stack()
+                # ! send notification about failed redeploy
                 raise RuntimeError("Stack Redeploy failed")
                 # TODO raise good error
 
-        #     TODO future mark stack as bad
-        #     remove stack
-            self.remove_stack()
-            self.stack_files_remove_running()
-            self.stack_files_load_from_good()
-            self.start_stack()
+            # ! send notification about failed deploy
+            self._deploy_stack_simple(is_redeploy=True)
 
-            # ! TODO continue on this
-        #     run `deploy_stack` with flag `is_redeploy` == True
+            # TODO future mark stack as bad, do this after redeploy to be sure it's not an external error
+            #  if code reaches this point, the redeploy was succesfull, if not an error would have been raised in the previous step
 
-        #     if deploy is NOT good
-        #         stop stack
-        #         raise error
+        # ? deploy is good
+        else:
+            if is_redeploy:
+                # ! send notification about succesfull redeploy
+                pass
+            else:
+                # ! send notification about succesfull deploy
+                pass
+            pass
 
-        #     if deploy IS good
-        #         send notification
-
-        # if deploy IS good
-        #    yeppiee ?
-        #    ? not sure if there is more to do here ?
-
+            #    ? not sure if there is more to do here ?
         pass
 
     ####################################################################################################
@@ -456,7 +454,7 @@ class Stack_Handler:
 
         if str(deploy_settings["methode"]).lower() not in ["blind", "simple", "canary"]:
             # TODO add logging
-            self.logger.warning(f"parameter `methode` is not set")
+            self.logger.warning(f"Value of parameter `methode` is invalid, must be one of: 'blind', 'simple', 'canary'")
             # raise ValueError(f"parameter `methode` is not set")
 
         self._deploy_settings = deploy_settings
@@ -486,7 +484,7 @@ class Stack_Handler:
             else:
                 self.logger.debug(f"deploy file '{sf}' not found")
 
-        # self.logger.debug(f"{deploy_settings=}")
+        self.logger.debug(f"no deploy settings file found, attempting to extract settings from compose file")
         return self._extract_deploy_from_compose()
 
     def _extract_deploy_from_compose(self):
@@ -498,6 +496,11 @@ class Stack_Handler:
         :return: String containing the text within the deploy block, 
                 or None if the block is not found.
         """
+
+        compose_files = [
+            self.STACK_FOLDER_GIT.joinpath("compose.yaml"),
+            self.STACK_FOLDER_GIT.joinpath("compose.yml")
+        ]
 
         def _extract_settings_from_file(compose_file: Path):
             try:
@@ -527,10 +530,8 @@ class Stack_Handler:
                 self.logger.exception(f"An error occurred: {e}")
                 return None
 
-        for cf in [
-            self.STACK_FOLDER_GIT.joinpath("compose.yaml"),
-            self.STACK_FOLDER_GIT.joinpath("compose.yml")
-        ]:
+        for cf in compose_files:
+            self.logger.debug(f"check file {cf}")
             if cf.exists() and cf.is_file():
                 self.logger.debug(f"loading settings from compose file '{cf}'")
 
@@ -547,3 +548,6 @@ class Stack_Handler:
 
             else:
                 self.logger.debug(f"compose file '{cf}' not found")
+        
+        
+        self.logger.info(f"could not load any delploy settings for stack {self.STACK_NAME}")
