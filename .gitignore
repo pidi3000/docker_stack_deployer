@@ -8,7 +8,6 @@ stack_running/
 stack_good/
 logs*.txt
 
-*temp*
 
 
 # Byte-compiled / optimized / DLL files

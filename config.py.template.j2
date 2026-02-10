@@ -1,0 +1,53 @@
+from pathlib import Path
+
+####################################################################################################
+####################################################################################################
+
+
+####################################################################################################
+# LOGGING
+####################################################################################################
+LOGGING_LEVEL = "{{ script_config_vars.LOG_LEVEL | default('info') }}"
+
+
+####################################################################################################
+# Fodlers
+####################################################################################################
+COMPOSE_SUBFOLDERS = {{ script_config_vars.COMPOSE_SUBFOLDERS}}
+""" Folder to search for docker compose stacks"""
+
+FOLDER_GIT_BASE = Path(__file__).parent.joinpath("{{ script_config_vars.FOLDER_GIT_BASE | default('git_base') }}")
+""" Folder of the cloned git repo"""
+
+FOLDER_RUNNING_STACK = Path(__file__).parent.joinpath("{{ script_config_vars.FOLDER_RUNNING_STACK | default('stack_running') }}")
+""" Folder containing all files for currently running stack version"""
+
+FOLDER_GOOD_STACK = Path(__file__).parent.joinpath("{{ script_config_vars.FOLDER_GOOD_STACK | default('stack_good') }}")
+""" Folder containing stack files for last known good stack version """
+
+
+####################################################################################################
+# Feature flags
+####################################################################################################
+
+FEATURE__LOGGING__BASE_NAME = "{{ script_config_vars.LOGGER_BASE_NAME | default('app') }}"
+
+FEATURE__MARK_BAD_STACK = {{ script_config_vars.FEATURE__MARK_BAD_STACK | default(False) }}  # ! not used yet
+FEATURE__DEV__WRITE_COMMIT_HASH = {{ script_config_vars.FEATURE__DEV__WRITE_COMMIT_HASH | default(True) }}
+# commands are not actually run, and only print to console
+FEATURE__DEV__DRY_RUN_CMDS = {{ script_config_vars.FEATURE__DEV__DRY_RUN_CMDS | default(True) }}
+
+
+##################################################
+# Helth check
+##################################################
+
+STACK_HEALTHCHECK_TIMEOUT = {{ script_config_vars.STACK_HEALTHCHECK_TIMEOUT | default(90) }} # TODO make this available in deploy settings file
+
+####################################################################################################
+# GIT
+####################################################################################################
+
+GIT_URL = "{{ script_config_vars.GIT_URL}}"
+GIT_USER = "{{ script_config_vars.GIT_USER}}"
+GIT_PASS = "{{ script_config_vars.GIT_PASS}}"
