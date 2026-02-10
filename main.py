@@ -231,7 +231,8 @@ def main():
     ##################################################
     # Log deploy queue
     ##################################################
-    logger.info(f"{len(stack_handlers)} Stacks queued for deploy:")
+    num_stacks = len(stack_handlers)
+    logger.info(f"{num_stacks} Stack{'s' if num_stacks != 1 else ''} queued for deploy:")
     for handler_c in stack_handlers:
         logger.info(f"{' '*4} {handler_c.STACK_FOLDER_BASE}")
         # logger.info(f"{' '*4} {handler_c.STACK_NAME}")
