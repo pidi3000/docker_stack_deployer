@@ -7,6 +7,7 @@ git_base/*
 stack_running/
 stack_good/
 logs*.txt
+logs*.txt.*
 
 
 

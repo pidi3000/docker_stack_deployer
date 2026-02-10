@@ -21,7 +21,24 @@ logger = logging.getLogger(config.FEATURE__LOGGING__BASE_NAME)
 
 
 def setup_logger():
-    class ColoredFormatter(logging.Formatter):
+    class MyBaseFormatter(logging.Formatter):
+        format_base = "%(asctime)s - %(levelname)-10s - %(name)-40s - %(message)s"
+        format_debug = "%(asctime)s - %(levelname)-10s - %(name)-40s - {%(filename)s:%(lineno)d} %(message)s"
+
+        FORMATS = {
+            logging.DEBUG:  format_debug,
+            logging.INFO: format_base,
+            logging.WARNING:  format_base,
+            logging.ERROR:  format_base,
+            logging.CRITICAL:  format_base
+        }
+
+        def format(self, record):
+            log_fmt = self.FORMATS.get(record.levelno)
+            formatter = logging.Formatter(log_fmt)
+            return formatter.format(record)
+
+    class ColoredFormatter(MyBaseFormatter):
 
         grey = "\x1b[38;20m"
         blue = "\x1b[34;20m"
@@ -29,21 +46,14 @@ def setup_logger():
         red = "\x1b[31;20m"
         bold_red = "\x1b[31;1m"
         reset = "\x1b[0m"
-        format = "%(asctime)s - %(levelname)-10s - %(name)-30s - %(message)s"
-        format_debug = "%(asctime)s - %(levelname)-10s - %(name)-30s - {%(filename)s:%(lineno)d} %(message)s"
 
         FORMATS = {
-            logging.DEBUG: grey + format_debug + reset,
-            logging.INFO: blue + format + reset,
-            logging.WARNING: yellow + format + reset,
-            logging.ERROR: red + format + reset,
-            logging.CRITICAL: bold_red + format + reset
+            logging.DEBUG: grey + MyBaseFormatter.format_debug + reset,
+            logging.INFO: blue + MyBaseFormatter.format_base + reset,
+            logging.WARNING: yellow + MyBaseFormatter.format_base + reset,
+            logging.ERROR: red + MyBaseFormatter.format_base + reset,
+            logging.CRITICAL: bold_red + MyBaseFormatter.format_base + reset
         }
-
-        def format(self, record):
-            log_fmt = self.FORMATS.get(record.levelno)
-            formatter = logging.Formatter(log_fmt)
-            return formatter.format(record)
 
     logger.setLevel(logging.DEBUG)  # ! DO NOT CHANGE LEVEL HERE
     # ? change level on the appropriate handler (Console or file)
@@ -52,7 +62,7 @@ def setup_logger():
     # ? console log output
     ##################################################
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)  # ! <-- change here
+    ch.setLevel(logging.INFO)  # ! <-- change here
     ch.setFormatter(ColoredFormatter())
 
     logger.addHandler(ch)
@@ -64,8 +74,8 @@ def setup_logger():
         filename="logs.txt",
         log_level=logging.DEBUG,
         backupCount=2,
-        format_string='%(asctime)s - %(levelname)-10s - %(name)s - {%(filename)s:%(lineno)d} - %(message)s',
-        formatter=None
+        # format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
+        formatter=MyBaseFormatter()
     )
 
     # fh.setFormatter(CustomFormatter())
@@ -77,8 +87,8 @@ def setup_logger():
         filename="logs-info.txt",
         log_level=logging.INFO,
         backupCount=1,
-        format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
-        formatter=None
+        # format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
+        formatter=MyBaseFormatter()
     )
 
     ##################################################
@@ -89,8 +99,8 @@ def setup_logger():
         log_level=logging.CRITICAL,
         # log_level=logging.ERROR,
         backupCount=2,
-        format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
-        formatter=None
+        # format_string='%(asctime)s - %(levelname)-10s - %(name)s - %(message)s',
+        formatter=MyBaseFormatter()
     )
 
     ##################################################
@@ -112,9 +122,13 @@ def setup_logger():
     logger.critical("test critical")
 
 
-def _create_log_file_handler(filename: str, log_level=logging.DEBUG,
-                             format_string: str = '%(asctime)s - %(levelname)-10s - %(name)s - {%(filename)s:%(lineno)d} - %(message)s', formatter: logging.Formatter = None,
-                             maxBytes: int = 500_000_000, backupCount: int = 2):
+def _create_log_file_handler(filename: str,
+                             log_level=logging.DEBUG,
+                             format_string: str = '%(asctime)s - %(levelname)-10s - %(name)s - {%(filename)s:%(lineno)d} - %(message)s',
+                             formatter: logging.Formatter = None,
+                             maxBytes: int = 10_000_000, # 10MB
+                             backupCount: int = 2
+                             ):
     """create and attach a file Handler to the main logger
 
     for entry formatting the `formatter` object is used, if None is provided `format_string` is used to create a simple formatter
@@ -203,6 +217,7 @@ def validate_config():
 ####################################################################################################
 # run
 ####################################################################################################
+
 
 def main():
     setup_logger()

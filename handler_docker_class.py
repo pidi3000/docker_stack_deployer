@@ -88,10 +88,10 @@ class Stack_Handler:
 
         self.logger.debug(f"Created handler for stack: {self.STACK_NAME}")
         # self.logger.info(f"{self.STACK_NAME=}")
-        self.logger.debug(f"{self.STACK_FOLDER_BASE=}")
-        self.logger.debug(f"{self.STACK_FOLDER_GIT=}")
-        self.logger.debug(f"{self.STACK_FOLDER_RUNNING=}")
-        self.logger.debug(f"{self.STACK_FOLDER_GOOD=}")
+        self.logger.debug(f"\t{self.STACK_FOLDER_BASE=}")
+        self.logger.debug(f"\t{self.STACK_FOLDER_GIT=}")
+        self.logger.debug(f"\t{self.STACK_FOLDER_RUNNING=}")
+        self.logger.debug(f"\t{self.STACK_FOLDER_GOOD=}")
 
     ##################################################
 
@@ -415,8 +415,9 @@ class Stack_Handler:
     ####################################################################################################
 
     def get_deploy_settings(self, validate_settings: bool = True, force_reload: bool = False):
-        self.logger.debug(f"{self._deploy_settings=}")
-        self.logger.debug(f"{force_reload=}")
+        self.logger.debug(f"Loading deploy settings")
+        self.logger.debug(f"\t{self._deploy_settings=}")
+        self.logger.debug(f"\t{force_reload=}")
 
         if self._deploy_settings is not None and not force_reload:
             return self._deploy_settings
@@ -457,6 +458,7 @@ class Stack_Handler:
             self.logger.warning(f"Value of parameter `methode` is invalid, must be one of: 'blind', 'simple', 'canary'")
             # raise ValueError(f"parameter `methode` is not set")
 
+        self.logger.info(f"Deploy settings loaded and validated successfully")
         self._deploy_settings = deploy_settings
         return self._deploy_settings
 
@@ -469,9 +471,9 @@ class Stack_Handler:
         deploy_settings = None
 
         for sf in setting_files:
-            self.logger.debug(f"check file {sf}")
+            self.logger.debug(f"\tcheck file {sf}")
             if sf.exists() and sf.is_file():
-                self.logger.debug(f"loading settings from deploy file '{sf}'")
+                self.logger.debug(f"\tloading settings from deploy file '{sf}'")
 
                 with open(sf, "r") as f:
                     deploy_settings = yaml.safe_load(f)
@@ -482,9 +484,9 @@ class Stack_Handler:
                 break
 
             else:
-                self.logger.debug(f"deploy file '{sf}' not found")
+                self.logger.debug(f"\tdeploy file not found")
 
-        self.logger.debug(f"no deploy settings file found, attempting to extract settings from compose file")
+        self.logger.debug(f"\tno deploy settings file found, attempting to extract settings from compose file")
         return self._extract_deploy_from_compose()
 
     def _extract_deploy_from_compose(self):
@@ -531,9 +533,9 @@ class Stack_Handler:
                 return None
 
         for cf in compose_files:
-            self.logger.debug(f"check file {cf}")
+            self.logger.debug(f"\tcheck file {cf}")
             if cf.exists() and cf.is_file():
-                self.logger.debug(f"loading settings from compose file '{cf}'")
+                self.logger.debug(f"\tloading settings from compose file '{cf}'")
 
                 file_string = _extract_settings_from_file(cf)
 
@@ -547,7 +549,7 @@ class Stack_Handler:
                 return deploy_settings
 
             else:
-                self.logger.debug(f"compose file '{cf}' not found")
+                self.logger.debug(f"\tcompose file '{cf}' not found")
         
         
         self.logger.info(f"could not load any delploy settings for stack {self.STACK_NAME}")
