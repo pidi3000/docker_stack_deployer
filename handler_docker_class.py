@@ -95,7 +95,7 @@ class Stack_Handler:
 
     ##################################################
 
-    def run_command(self, command, stack_folder: Path = None):
+    def _run_command(self, command, stack_folder: Path = None):
         """
         Runs a shell command and returns its output.
 
@@ -128,36 +128,38 @@ class Stack_Handler:
 
     ##################################################
 
-    def stop_stack(self):
+    def _stop_compose_stack(self):
         try:
             self.logger.info(f"stoping stack {self.STACK_NAME}...")
             docker_command = f"docker compose stop"
-            self.run_command(docker_command)
+            self._run_command(docker_command)
 
         except Exception as e:
             self.logger.exception(f"Failed to stop stack {
                 self.STACK_NAME}: {str(e)}")
 
-    def remove_stack(self):
+    def _remove_compose_stack(self):
         try:
-            self.logger.info(f"Shutting down stack {
-                self.STACK_NAME}...")
+            self.logger.info(
+                f"\tShutting down stack..."
+            )
             docker_command = f"docker compose down -v"
-            self.run_command(docker_command)
+            self._run_command(docker_command)
 
             time.sleep(2)
 
         except Exception as e:
-            self.logger.exception(f"Failed to shut down stack {
-                self.STACK_NAME}: {str(e)}")
+            self.logger.exception(
+                f"Failed to shut down stack {self.STACK_NAME}: {str(e)}"
+            )
 
     ##################################################
 
-    def start_stack(self):
+    def _start_compose_stack(self):
         try:
-            self.logger.info(f"staring stack {self.STACK_NAME}...")
+            self.logger.info(f"\tstarting stack {self.STACK_NAME}...")
             docker_command = f"docker compose up -d"
-            self.run_command(docker_command)
+            self._run_command(docker_command)
 
         except Exception as e:
             self.logger.exception(f"Failed to start stack {
@@ -171,7 +173,7 @@ class Stack_Handler:
         try:
             self.logger.info(f"checking health of stack {self.STACK_NAME}...")
             docker_command = f"docker compose ps -a --format json"
-            data = self.run_command(docker_command)
+            data = self._run_command(docker_command)
 
             info_jsonl = data.split("\n")
 
@@ -192,7 +194,10 @@ class Stack_Handler:
         pass
 
     def check_stack_running(self) -> bool:
-        pass
+        if self.STACK_FOLDER_RUNNING.exists() and self.STACK_FOLDER_RUNNING.is_dir():
+            return True
+        else:
+            return False
 
     ####################################################################################################
 
@@ -227,8 +232,9 @@ class Stack_Handler:
 
     def stack_files_remove_running(self):
         # self.logger.debug()
-        self.logger.debug(f"removing files \nfrom: {
-                          self.STACK_FOLDER_RUNNING}")
+        self.logger.debug(
+            f"removing files \nfrom: {self.STACK_FOLDER_RUNNING}"
+        )
         if self.STACK_FOLDER_RUNNING.exists() and self.STACK_FOLDER_RUNNING.is_dir():
             shutil.rmtree(self.STACK_FOLDER_RUNNING)
             # # Loop through all items in the folder
@@ -241,7 +247,7 @@ class Stack_Handler:
 
     ####################################################################################################
 
-    def deploy_stack(self, _is_redeploy: bool = False) -> bool:
+    def deploy(self, _is_redeploy: bool = False) -> bool:
         """Run stack auto deploy
 
         Parameters
@@ -262,49 +268,9 @@ class Stack_Handler:
             _description_
         """
 
-        # ? don't think I need to do anything here?
-        # * this will be handle by each deploy methode
-        # if is_redeploy:
-        #     # clear running_stacks folder
-        #     # if not stack copy exist in good_stacks folder
-        #     #    return with error
-        #     #
-        #     # copy good version to running_stacks
-        #     pass
-        # ***********************************************************
-
-        ####################################################################################################
-        # Old
-        ####################################################################################################
-        # settings = self._load_deploy_settings()
-
-        # self.logger.info(settings) # TODO better log format
-        # if settings is None:
-        #     # TODO add logging
-        #     self.logger.warning("No deploy settings found")
-        #     return
-
-        # if "deploy" not in settings:
-        #     # TODO add logging
-        #     self.logger.warning("No deploy settings found")
-        #     return
-
-        # if settings["deploy"] is False:
-        #     # ? if "deploy" is false, clean the directory
-        #     self.stack_files_remove_running()
-        #     return
-
-        # if "methode" not in settings:
-        #     settings["methode"] = "blind"
-
-        ####################################################################################################
-        # New
-        ####################################################################################################
-
         self.logger.info("Starting stack deployment...")
 
         deploy_settings = self.get_deploy_settings()
-        self.logger.debug(f"{deploy_settings=}")
 
         ####################################################################################################
 
@@ -339,13 +305,25 @@ class Stack_Handler:
             # TODO raise error
             raise ValueError(f"Invalid deployment methode: {deploy_methode}")
 
+    def remove(self):
+        self.logger.info("Removing stack...")
+
+        self._remove_compose_stack()
+        self.logger.info(
+            f"\tRemoving stack files"
+        )
+        self.stack_files_remove_running()
+
+        return True
+
     ##################################################
 
     def _deploy_stack_blind(self):
-        self.remove_stack()
+        self._remove_compose_stack()
+        self.logger.info(f"\tloading new stack version from git...")
         self.stack_files_remove_running()
         self.stack_files_load_from_git()
-        self.start_stack()
+        self._start_compose_stack()
 
     def _deploy_stack_simple(self, is_redeploy: bool = False):
 
@@ -365,13 +343,13 @@ class Stack_Handler:
         # deploy new stack
         # ************************************************************
 
-        self.remove_stack()
+        self._remove_compose_stack()
         self.stack_files_remove_running()
         if is_redeploy:
             self.stack_files_load_from_good()
         else:
             self.stack_files_load_from_git()
-        self.start_stack()
+        self._start_compose_stack()
 
         time_start = time.time()
         deploy_good = False
@@ -388,7 +366,7 @@ class Stack_Handler:
         if not deploy_good:
             #     if is_redeploy
             if is_redeploy:
-                self.stop_stack()
+                self._stop_compose_stack()
                 # ! send notification about failed redeploy
                 raise RuntimeError("Stack Redeploy failed")
                 # TODO raise good error
@@ -432,7 +410,7 @@ class Stack_Handler:
         # ! validate deploy settings are correct
         if deploy_settings is None:
             # TODO add logging
-            self.logger.warning(f"Could not load any deploy settings")
+            self.logger.debug(f"Could not load any deploy settings")
             self._deploy_settings = deploy_settings
             return self._deploy_settings
             # raise TypeError(f"Could not load any deploy settings")
@@ -455,10 +433,11 @@ class Stack_Handler:
 
         if str(deploy_settings["methode"]).lower() not in ["blind", "simple", "canary"]:
             # TODO add logging
-            self.logger.warning(f"Value of parameter `methode` is invalid, must be one of: 'blind', 'simple', 'canary'")
+            self.logger.warning(
+                f"Value of parameter `methode` is invalid, must be one of: 'blind', 'simple', 'canary'")
             # raise ValueError(f"parameter `methode` is not set")
 
-        self.logger.info(f"Deploy settings loaded and validated successfully")
+        self.logger.debug(f"Deploy settings loaded and validated successfully")
         self._deploy_settings = deploy_settings
         return self._deploy_settings
 
@@ -473,7 +452,8 @@ class Stack_Handler:
         for sf in setting_files:
             self.logger.debug(f"\tcheck file {sf}")
             if sf.exists() and sf.is_file():
-                self.logger.debug(f"\tloading settings from deploy file '{sf}'")
+                self.logger.debug(
+                    f"\tloading settings from deploy file '{sf}'")
 
                 with open(sf, "r") as f:
                     deploy_settings = yaml.safe_load(f)
@@ -486,7 +466,8 @@ class Stack_Handler:
             else:
                 self.logger.debug(f"\tdeploy file not found")
 
-        self.logger.debug(f"\tno deploy settings file found, attempting to extract settings from compose file")
+        self.logger.debug(
+            f"\tno deploy settings file found, attempting to extract settings from compose file")
         return self._extract_deploy_from_compose()
 
     def _extract_deploy_from_compose(self):
@@ -535,7 +516,8 @@ class Stack_Handler:
         for cf in compose_files:
             self.logger.debug(f"\tcheck file {cf}")
             if cf.exists() and cf.is_file():
-                self.logger.debug(f"\tloading settings from compose file '{cf}'")
+                self.logger.debug(
+                    f"\tloading settings from compose file '{cf}'")
 
                 file_string = _extract_settings_from_file(cf)
 
@@ -550,6 +532,6 @@ class Stack_Handler:
 
             else:
                 self.logger.debug(f"\tcompose file '{cf}' not found")
-        
-        
-        self.logger.info(f"could not load any delploy settings for stack {self.STACK_NAME}")
+
+        self.logger.debug(
+            f"could not load any delploy settings for stack {self.STACK_NAME}")

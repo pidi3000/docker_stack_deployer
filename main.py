@@ -91,6 +91,7 @@ def setup_logger():
     logger.error("test error")
     logger.critical("test critical")
 
+
 def _create_log_file_handler(filename: str,
                              log_level=logging.DEBUG,
                              format_string: str = '%(asctime)s - %(levelname)-10s - %(name)s - {%(filename)s:%(lineno)d} - %(message)s',
@@ -204,66 +205,85 @@ def main():
         changed_files)
     # ? list of paths of all compose stacks that have had files changed in the git repo since last check
 
-
-# print()
-# print()
-# print()
-# print("Start")
-
-    stack_handlers: list[Stack_Handler] = []
+    stack_handlers_to_deploy: list[Stack_Handler] = []
+    stack_handlers_to_remove: list[Stack_Handler] = []
 
     ####################################################################################################
     # ? create stack handler and load deploy info
     ####################################################################################################
     logger.info("Loading stack deploy settings...")
     for folder in changed_stack_folders:
-        handler_c = Stack_Handler(folder)
-        settings = handler_c.get_deploy_settings(force_reload=True)
+        stack_h = Stack_Handler(folder)
+        settings = stack_h.get_deploy_settings(force_reload=True)
 
-        if settings is None:
-            continue
-
-        if settings["deploy"] is False:
-            continue
-
-        stack_handlers.append(handler_c)
-
-    ##################################################
-    # Log deploy queue
-    ##################################################
-    num_stacks = len(stack_handlers)
-    logger.info(f"{num_stacks} Stack{'s' if num_stacks != 1 else ''} queued for deploy:")
-    for handler_c in stack_handlers:
-        logger.info(f"{' '*4} {handler_c.STACK_FOLDER_BASE}")
-        # logger.info(f"{' '*4} {handler_c.STACK_NAME}")
-
-    ##################################################
-    # Deploy queued stacks
-    ##################################################
-    for handler_c in stack_handlers:
-        try:
-            deploy_success = handler_c.deploy_stack()
-
-            if deploy_success:
-                handler_c.logger.info("Deployment successfull")
+        if settings is None or settings["deploy"] is False:
+            if stack_h.check_stack_running():
+                stack_handlers_to_remove.append(stack_h)
             else:
-                handler_c.logger.critical(
-                    "Failed to deploy due to unknown error")
+                stack_h.logger.debug(
+                    f"Stack is not set to deploy and is not currently running, skipping stack")
 
-        except Exception as e:
-            handler_c.logger.exception("Unhandelded error during deployment")
-            handler_c.logger.critical(
-                "Failed to deploy due to unhandeld error")
+        elif settings["deploy"] is True:
+            stack_handlers_to_deploy.append(stack_h)
 
-        #     print()
-        #     print("-"*100)
-        #     print("ERROR")
-        #     print(e)
-        #     print("-"*100)
-        # print()
-        # print()
+        else:
+            stack_h.logger.critical(
+                f"Invalid deploy setting value '{settings['deploy']}' in deploy.yml, skipping stack"
+            )
+
+    _process_stack_queue(stack_handlers_to_remove, action="removel")
+    _process_stack_queue(stack_handlers_to_deploy, action="deployment")
 
     logger.info("Script is done")
 
 
-main()
+def _process_stack_queue(stack_handlers: list[Stack_Handler], action: str):
+
+    action = action.lower()
+    if action not in ("deployment", "removel"):
+        raise ValueError(
+            f"Invalid action '{action}', must be 'deployment' or 'removel'"
+        )
+
+    ####################################################################################################
+    # Log queue
+    ####################################################################################################
+    num_stacks = len(stack_handlers)
+    logger.info(
+        f"{num_stacks} Stack{'s' if num_stacks != 1 else ''} queued for {action}:"
+    )
+
+    for stack_h in stack_handlers:
+        logger.info(f"{' '*4} {stack_h.STACK_NAME}")
+
+    ##################################################
+    # handel queued stacks
+    ##################################################
+    for stack_h in stack_handlers:
+        try:
+            # deploy_success = stack_h.update_deployment()
+            if action == "deployment":
+                action_success = stack_h.deploy()
+            elif action == "removel":
+                action_success = stack_h.remove()
+            else:
+                raise ValueError(
+                    f"Invalid action '{action}', must be 'deployment' or 'removel'"
+                )
+
+            if action_success:
+                stack_h.logger.info(f"{action.capitalize()} successfull")
+            else:
+                stack_h.logger.critical(
+                    f"{action.capitalize()} Failed due to unknown error"
+                )
+
+        except Exception as e:
+            stack_h.logger.exception(f"Unhandelded error during {action}")
+            stack_h.logger.critical(
+                f"stack {action} failed due to unhandeld error"
+            )
+
+
+if __name__ == "__main__":
+    main()
