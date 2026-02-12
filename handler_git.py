@@ -53,7 +53,10 @@ def _clone_repo(repo_url, repo_dir: Path, state_file: Path):
     changed_files = []
 
     # Clone the repository if it doesn't exist
-    Repo.clone_from(repo_url, repo_dir)
+    if hasattr(config, "GIT_BRANCH") and len(config.GIT_BRANCH.strip()) > 1:
+        Repo.clone_from(repo_url, repo_dir, branch=config.GIT_BRANCH)
+    else:
+        Repo.clone_from(repo_url, repo_dir)
 
     # Save the initial commit hash
     repo = Repo(repo_dir)

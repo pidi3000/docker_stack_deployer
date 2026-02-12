@@ -81,16 +81,15 @@ def setup_logger():
 
     ##################################################
 
-    logger.info("-"*200)
+    logger.info("-"*60)
     logger.info("Starting app")
-    logger.info("-"*200)
+    logger.info("-"*60)
 
     logger.debug("test debug")
     logger.info("test info")
     logger.warning("test warning")
     logger.error("test error")
     logger.critical("test critical")
-
 
 def _create_log_file_handler(filename: str,
                              log_level=logging.DEBUG,

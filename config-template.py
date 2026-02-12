@@ -52,3 +52,5 @@ GIT_URL = ""
 GIT_USER = ""
 # TODO load this from a file
 GIT_PASS = ""
+# TODO for now this only works on first clone, following pulls will use the branch used by the original clone
+GIT_BRANCH = "main"
