@@ -139,7 +139,8 @@ class Stack_Handler:
                 self.STACK_NAME}: {str(e)}")
 
     def _remove_compose_stack(self):
-        try:
+        if self.check_stack_running():
+
             self.logger.info(
                 f"\tShutting down stack..."
             )
@@ -148,9 +149,9 @@ class Stack_Handler:
 
             time.sleep(2)
 
-        except Exception as e:
-            self.logger.exception(
-                f"Failed to shut down stack {self.STACK_NAME}: {str(e)}"
+        else:
+            self.logger.info(
+                f"\tStack is not running, skipping shutdown command"
             )
 
     ##################################################
@@ -285,25 +286,32 @@ class Stack_Handler:
         # deploy_methode = settings["methode"] if "methode" not in settings else "blind"
         deploy_methode = deploy_settings["methode"]
 
-        if deploy_methode == "blind":
-            self._deploy_stack_blind()
-            return True
+        try:
+            if deploy_methode == "blind":
+                self._deploy_stack_blind()
+                return True
 
-        elif deploy_methode == "simple":
-            # return False
-            raise NotImplementedError(
-                "the `simple` deployment methode has not been implemented yet")
+            elif deploy_methode == "simple":
+                # return False
+                raise NotImplementedError(
+                    "the `simple` deployment methode has not been implemented yet")
 
-            self._deploy_stack_simple(_is_redeploy)
+                self._deploy_stack_simple(_is_redeploy)
 
-        elif deploy_methode == "canary":
-            # return False
-            raise NotImplementedError(
-                "the `canary` deployment methode has not been implemented yet")
+            elif deploy_methode == "canary":
+                # return False
+                raise NotImplementedError(
+                    "the `canary` deployment methode has not been implemented yet")
 
-        else:
-            # TODO raise error
-            raise ValueError(f"Invalid deployment methode: {deploy_methode}")
+            else:
+                # TODO raise error
+                raise ValueError(
+                    f"Invalid deployment methode: {deploy_methode}")
+
+        except Exception as e:
+            self.logger.exception(
+                f"Stack deployment failed: {self.STACK_NAME}: {str(e)}"
+            )
 
     def remove(self):
         self.logger.info("Removing stack...")
@@ -372,6 +380,7 @@ class Stack_Handler:
                 # TODO raise good error
 
             # ! send notification about failed deploy
+            # ! doesn't work like this because the previous version could have been using a different deploy methode
             self._deploy_stack_simple(is_redeploy=True)
 
             # TODO future mark stack as bad, do this after redeploy to be sure it's not an external error
