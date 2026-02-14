@@ -1,15 +1,5 @@
 from pathlib import Path
 
-####################################################################################################
-####################################################################################################
-
-
-####################################################################################################
-# LOGGING
-####################################################################################################
-LOGGING_LEVEL = "{{ script_config_vars.LOG_LEVEL | default('info') }}"
-LOGGING_FILE_PATH = "{{ script_config_vars.LOG_FILE_PATH | default('logs.txt') }}"
-
 
 ####################################################################################################
 # Fodlers
@@ -17,15 +7,27 @@ LOGGING_FILE_PATH = "{{ script_config_vars.LOG_FILE_PATH | default('logs.txt') }
 COMPOSE_SUBFOLDERS = {{ script_config_vars.COMPOSE_SUBFOLDERS }}
 """ Folder to search for docker compose stacks"""
 
-FOLDER_GIT_BASE = Path(__file__).parent.joinpath("{{ script_config_vars.FOLDER_GIT_BASE | default('git_base') }}")
+PATH_FOLDER_BASE = Path("{{ script_config_vars.PATH_FOLDER_BASE}}")
+""" Base folder for all data used by the script, ouside of script folder for persistent storage. This is where the git repo will be cloned, and where the stack files will be stored"""
+
+PATH_FOLDER_GIT_BASE = PATH_FOLDER_BASE.joinpath("git_base")
 """ Folder of the cloned git repo"""
 
-FOLDER_RUNNING_STACK = Path(__file__).parent.joinpath("{{ script_config_vars.FOLDER_RUNNING_STACK | default('stack_running') }}")
+PATH_FOLDER_RUNNING_STACK = PATH_FOLDER_BASE.joinpath("stack_running")
 """ Folder containing all files for currently running stack version"""
 
-FOLDER_GOOD_STACK = Path(__file__).parent.joinpath("{{ script_config_vars.FOLDER_GOOD_STACK | default('stack_good') }}")
+PATH_FOLDER_GOOD_STACK = PATH_FOLDER_BASE.joinpath("stack_good")
 """ Folder containing stack files for last known good stack version """
 
+PATH_FILE_COMMIT_HASH = PATH_FOLDER_BASE.joinpath("last_commit_hash.txt")
+""" File to store the last commit hash, used to detect changes in the git repo"""
+
+
+####################################################################################################
+# LOGGING
+####################################################################################################
+LOGGING_LEVEL = "{{ script_config_vars.LOG_LEVEL | default('info') }}"
+LOGGING_FILE_PATH = "{{ script_config_vars.LOG_FILE_PATH | default('PATH_FOLDER_BASE.joinpath("logs.txt")') }}"
 
 ####################################################################################################
 # Feature flags

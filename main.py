@@ -140,7 +140,7 @@ def _create_log_file_handler(filename: str,
 
 
 def validate_config():
-    BASE_PATH = Path(__file__).parent.absolute()
+    # BASE_PATH = Path(__file__).parent.absolute()
 
     def _validate_path(varname, enforce_in_base_path=True):
         path = getattr(config, varname)
@@ -151,9 +151,10 @@ def validate_config():
             raise TypeError(
                 f"'config.{varname}' must be convertable to a `pathlib.Path` object")
 
-        if enforce_in_base_path and not path.is_relative_to(BASE_PATH):
-            raise ValueError(f"the path 'config.{
-                             varname}' must inside script base path ('{BASE_PATH}')")
+        if enforce_in_base_path and not path.is_relative_to(config.PATH_FOLDER_BASE):
+            raise ValueError(
+                f"the path 'config.{varname}' must be inside script base path ('{config.PATH_FOLDER_BASE}')"
+            )
 
     def _validate_value_set(varname, var_type):
 
@@ -168,10 +169,12 @@ def validate_config():
     # if not isinstance(config.COMPOSE_SUBFOLDERS, list):
     #     raise TypeError("config.COMPOSE_SUBFOLDERS must be of type list")
 
-    _validate_path("LOGGING_FILE_PATH", enforce_in_base_path=False)
-    _validate_path("FOLDER_GIT_BASE")
-    _validate_path("FOLDER_RUNNING_STACK")
-    _validate_path("FOLDER_GOOD_STACK")
+    _validate_path("PATH_FOLDER_BASE", enforce_in_base_path=False)
+    _validate_path("PATH_FOLDER_GIT_BASE")
+    _validate_path("PATH_FOLDER_RUNNING_STACK")
+    _validate_path("PATH_FOLDER_GOOD_STACK")
+    _validate_path("PATH_FILE_COMMIT_HASH")
+    
 
     _validate_value_set("GIT_URL", str)
     _validate_value_set("GIT_USER", str)
@@ -185,7 +188,9 @@ def validate_config():
     _validate_value_set("FEATURE__DEV__WRITE_COMMIT_HASH", bool)
     _validate_value_set("FEATURE__DEV__DRY_RUN_CMDS", bool)
 
-    # Validate logging level config
+    # Validate logging config
+    _validate_path("LOGGING_FILE_PATH", enforce_in_base_path=False)
+    
     config.LOGGING_LEVEL = config.LOGGING_LEVEL.upper()
     if config.LOGGING_LEVEL not in logging.getLevelNamesMapping():
         raise ValueError(

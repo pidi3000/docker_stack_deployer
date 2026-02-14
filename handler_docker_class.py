@@ -72,16 +72,16 @@ class Stack_Handler:
 
     def __init__(self, stack_folder_base: Path):
         stack_folder_base = stack_folder_base.relative_to(
-            config.FOLDER_GIT_BASE)
+            config.PATH_FOLDER_GIT_BASE)
 
         self.STACK_NAME = stack_folder_base.name
 
         self.STACK_FOLDER_BASE = stack_folder_base
-        self.STACK_FOLDER_GIT = config.FOLDER_GIT_BASE.joinpath(
+        self.STACK_FOLDER_GIT = config.PATH_FOLDER_GIT_BASE.joinpath(
             stack_folder_base)
-        self.STACK_FOLDER_RUNNING = config.FOLDER_RUNNING_STACK.joinpath(
+        self.STACK_FOLDER_RUNNING = config.PATH_FOLDER_RUNNING_STACK.joinpath(
             stack_folder_base)
-        self.STACK_FOLDER_GOOD = config.FOLDER_GOOD_STACK.joinpath(
+        self.STACK_FOLDER_GOOD = config.PATH_FOLDER_GOOD_STACK.joinpath(
             stack_folder_base)
 
         self.logger = base_logger.getChild(self.STACK_NAME)

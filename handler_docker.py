@@ -139,8 +139,8 @@ def deploy_stack(stack_folder_git: Path, is_redeploy: bool = False):
     #     pass
 
     settings = _load_deploy_settings(stack_folder_git)
-    stack_folder_base = Path(stack_folder_git.relative_to(config.FOLDER_GIT_BASE))
-    stack_folder_running = config.FOLDER_RUNNING_STACK.joinpath(stack_folder_base)
+    stack_folder_base = Path(stack_folder_git.relative_to(config.PATH_FOLDER_GIT_BASE))
+    stack_folder_running = config.PATH_FOLDER_RUNNING_STACK.joinpath(stack_folder_base)
 
     print(settings)
     if settings is None:

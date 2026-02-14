@@ -20,10 +20,10 @@ def get_all_stack_folders():
     print(config.COMPOSE_SUBFOLDERS)
 
     if isinstance(config.COMPOSE_SUBFOLDERS, (list, tuple, set)):
-        COMPOSE_FOLDERS = [config.FOLDER_GIT_BASE.joinpath(
+        COMPOSE_FOLDERS = [config.PATH_FOLDER_GIT_BASE.joinpath(
             sub_folder) for sub_folder in config.COMPOSE_SUBFOLDERS]
     else:
-        COMPOSE_FOLDERS = [config.FOLDER_GIT_BASE.joinpath(
+        COMPOSE_FOLDERS = [config.PATH_FOLDER_GIT_BASE.joinpath(
             config.COMPOSE_SUBFOLDERS)]
 
     services = []
@@ -121,7 +121,7 @@ def get_all_stack_folders_v2():
     # print(config.COMPOSE_SUBFOLDERS)
 
     COMPOSE_FOLDERS = [
-        config.FOLDER_GIT_BASE.joinpath(sub_folder) for sub_folder in sorted(config.COMPOSE_SUBFOLDERS)
+        config.PATH_FOLDER_GIT_BASE.joinpath(sub_folder) for sub_folder in sorted(config.COMPOSE_SUBFOLDERS)
     ]
 
     stack_folders: list[Path] = []
@@ -134,7 +134,7 @@ def get_all_stack_folders_v2():
         stack_compose_files = _find_compose_files(folder)
         for compose_file in stack_compose_files:
             s_folder = compose_file.parent
-            s_folder_rel = s_folder.relative_to(config.FOLDER_GIT_BASE)
+            s_folder_rel = s_folder.relative_to(config.PATH_FOLDER_GIT_BASE)
 
             # print(str(s_folder_rel).ljust(40), "\t", len(s_folder_rel.parts), "\t", s_folder_rel.parts)
             if len(s_folder_rel.parts) >= 2:
@@ -261,7 +261,7 @@ def get_updated_stack_folders_v2(update_files: list[tuple[Path, str]]) -> list[P
     
     if len(changed_stack_folders) > 1:
         for changed_stack in changed_stack_folders:
-            logger.info(f"{' '*4}{changed_stack.relative_to(config.FOLDER_GIT_BASE)}")
+            logger.info(f"{' '*4}{changed_stack.relative_to(config.PATH_FOLDER_GIT_BASE)}")
         
     return changed_stack_folders
 

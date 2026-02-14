@@ -10,7 +10,8 @@ from git import Repo, GitCommandError, InvalidGitRepositoryError
 
 ####################################################################################################
 
-logger = logging.getLogger(config.FEATURE__LOGGING__BASE_NAME).getChild(__name__)
+logger = logging.getLogger(
+    config.FEATURE__LOGGING__BASE_NAME).getChild(__name__)
 
 # logger = logging.getLogger(__name__)
 
@@ -33,22 +34,24 @@ def _append_file_change(changed_files: list[Path], file_path, change_string) -> 
 
     return changed_files
 
-####################################################################################################
 
-def _load_last_commit_hash(state_file:Path):
-    if state_file.exists():
-        with state_file.open('r') as f:
+####################################################################################################
+def _load_last_commit_hash():
+    if config.PATH_FILE_COMMIT_HASH.exists():
+        with config.PATH_FILE_COMMIT_HASH.open('r') as f:
             previous_commit = f.read().strip()
         return previous_commit
-    
+
     return None
 
-def _write_last_commit_hash(state_file:Path, commit_hahs:str):
+
+def _write_last_commit_hash(commit_hahs: str):
     if config.FEATURE__DEV__WRITE_COMMIT_HASH:
-        with state_file.open('w') as f:
+        with config.PATH_FILE_COMMIT_HASH.open('w') as f:
             f.write(commit_hahs)
 
-def _clone_repo(repo_url, repo_dir: Path, state_file: Path):
+
+def _clone_repo(repo_url, repo_dir: Path):
 
     changed_files = []
 
@@ -60,9 +63,7 @@ def _clone_repo(repo_url, repo_dir: Path, state_file: Path):
 
     # Save the initial commit hash
     repo = Repo(repo_dir)
-    _write_last_commit_hash(state_file, repo.head.commit.hexsha)
-    # with state_file.open('w') as f:
-    #     f.write(repo.head.commit.hexsha)
+    _write_last_commit_hash(repo.head.commit.hexsha)
 
     # On the first clone, list all files as 'added'
     for file_path in repo.head.commit.tree.traverse():
@@ -75,12 +76,12 @@ def _clone_repo(repo_url, repo_dir: Path, state_file: Path):
     return f"Cloned repository from '{config.GIT_URL}' into '{repo_dir}'", changed_files
 
 
-def _pull_repo(repo_dir: Path, state_file: Path):
+def _pull_repo(repo_dir: Path):
     changed_files = []
 
     repo = Repo(repo_dir)
     if not repo.bare:
-        previous_commit = _load_last_commit_hash(state_file)
+        previous_commit = _load_last_commit_hash()
 
         # Pull the latest changes
         origin = repo.remotes.origin
@@ -117,17 +118,14 @@ def _pull_repo(repo_dir: Path, state_file: Path):
 
         # Save the latest commit hash for future comparisons
 
-        _write_last_commit_hash(state_file, repo.head.commit.hexsha)
-        # if config.FEATURE__DEV__WRITE_COMMIT_HASH:
-        #     with state_file.open('w') as f:
-        #         f.write(latest_commit.hexsha)
+        _write_last_commit_hash(repo.head.commit.hexsha)
 
         return f"Updated the existing repository in '{repo_dir}'", changed_files
     else:
         return f"The repository in '{repo_dir}' is bare.", changed_files
 
 
-def _clone_or_update_repo(repo_url, repo_dir, state_file="git_last_commit.txt"):
+def _clone_or_update_repo(repo_url, repo_dir):
     """
     Clones a Git repository if it doesn't exist locally. 
     If it exists, pulls the latest changes and returns a list of changed files since the last update.
@@ -136,23 +134,15 @@ def _clone_or_update_repo(repo_url, repo_dir, state_file="git_last_commit.txt"):
     Args:
     repo_url (str): The URL of the git repository to clone or update.
     repo_dir (str): The local directory to clone into or pull from.
-    state_file (str): Path to the file that stores the last checked commit hash.
 
     Returns:
     tuple: A message indicating whether the repository was cloned or updated,
            and a list of changed files with their statuses (added, modified, deleted).
     """
     repo_dir = Path(repo_dir)  # Convert the directory to a Path object
-    state_file = Path(state_file)
-    # state_file = Path(str(repo_dir) + "-" + state_file)
-    # state_file = repo_dir.joinpath(state_file)
+    logger.debug(
+        f"Last commit hash saved is: {_load_last_commit_hash()}")
 
-    # logger.debug(state_file)
-    logger.debug(f"Last commit hash saved in '{state_file}': {_load_last_commit_hash(state_file)}")
-
-    
-    
-    
     message = None
     changed_files = []
 
@@ -162,11 +152,11 @@ def _clone_or_update_repo(repo_url, repo_dir, state_file="git_last_commit.txt"):
 
         # If the directory already contains a git repo, pull updates
         if repo_dir.exists() and repo_dir.is_dir():
-            message, changed_files = _pull_repo(repo_dir, state_file)
+            message, changed_files = _pull_repo(repo_dir)
 
         else:
             message, changed_files = _clone_repo(
-                repo_url, repo_dir, state_file)
+                repo_url, repo_dir)
 
     except (GitCommandError, InvalidGitRepositoryError) as e:
         raise
@@ -201,7 +191,7 @@ def load_git_repo() -> list[Path, str]:
         username=config.GIT_USER,
         password=config.GIT_PASS
     )
-    
+
     repo_url_censored = _add_credentials_to_url(
         url=config.GIT_URL,
         username=config.GIT_USER,
@@ -209,13 +199,13 @@ def load_git_repo() -> list[Path, str]:
     )
 
     # repo_dir = Path(__file__).parent.joinpath(config.GIT_BASE_FOLDER)
-    repo_dir = config.FOLDER_GIT_BASE
+    repo_dir = config.PATH_FOLDER_GIT_BASE
 
     logger.debug(f"repo_url={repo_url_censored}")
     logger.debug(f"repo_dir={str(repo_dir)}")
 
     message, changes = _clone_or_update_repo(repo_url, repo_dir)
-    changes = [(config.FOLDER_GIT_BASE.joinpath(change[0]), change[1])
+    changes = [(config.PATH_FOLDER_GIT_BASE.joinpath(change[0]), change[1])
                for change in changes]
 
     logger.debug(message)
@@ -225,7 +215,8 @@ def load_git_repo() -> list[Path, str]:
         _change_str = "Git file changes:\n"
 
         for file, status in changes:
-            _change_str = _change_str + f"{' '*4}{str(file.relative_to(config.FOLDER_GIT_BASE)):<15}: {status}\n"
+            _change_str = _change_str + \
+                f"{' '*4}{str(file.relative_to(config.PATH_FOLDER_GIT_BASE)):<15}: {status}\n"
 
         logger.debug(_change_str)
 

@@ -1,7 +1,28 @@
 from pathlib import Path
 
+
 ####################################################################################################
+# Fodlers
 ####################################################################################################
+COMPOSE_SUBFOLDERS = [
+    "git_subfolder"
+]
+""" Folder to search for docker compose stacks"""
+
+PATH_FOLDER_BASE = Path("/home/user/docker_stack_deployer_data")
+""" Base folder for all data used by the script, ouside of script folder for persistent storage. This is where the git repo will be cloned, and where the stack files will be stored"""
+
+PATH_FOLDER_GIT_BASE = PATH_FOLDER_BASE.joinpath("git_base")
+""" Folder of the cloned git repo"""
+
+PATH_FOLDER_RUNNING_STACK = PATH_FOLDER_BASE.joinpath("stack_running")
+""" Folder containing all files for currently running stack version"""
+
+PATH_FOLDER_GOOD_STACK = PATH_FOLDER_BASE.joinpath("stack_good")
+""" Folder containing stack files for last known good stack version """
+
+PATH_FILE_COMMIT_HASH = PATH_FOLDER_BASE.joinpath("last_commit_hash.txt")
+""" File to store the last commit hash, used to detect changes in the git repo"""
 
 
 ####################################################################################################
@@ -9,22 +30,6 @@ from pathlib import Path
 ####################################################################################################
 LOGGING_LEVEL = "info"
 LOGGING_FILE_PATH = "logs.txt"
-
-####################################################################################################
-# Fodlers
-####################################################################################################
-COMPOSE_SUBFOLDERS = ["git_subfolder"]
-""" Folder to search for docker compose stacks"""
-
-FOLDER_GIT_BASE = Path(__file__).parent.joinpath("git_base")
-""" Folder of the cloned git repo"""
-
-FOLDER_RUNNING_STACK = Path(__file__).parent.joinpath("stack_running")
-""" Folder containing all files for currently running stack version"""
-
-FOLDER_GOOD_STACK = Path(__file__).parent.joinpath("stack_good")
-""" Folder containing stack files for last known good stack version """
-
 
 ####################################################################################################
 # Feature flags
